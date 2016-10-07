@@ -1,0 +1,31 @@
+{% load staticfiles %}
+
+<link rel="stylesheet" type="text/css" href="{% static 'books/style.css' %}" />
+Hi review.html
+<h3>{{ book.title }} - {{condition}}</h3>
+
+        <p><a href="{% url 'books:index' %}">Home</a> - 
+        {% if condition == '5' %}
+        <a href="{% url 'books:new-review' prev.id %}">Prev</a> - <a href="{% url 'books:new-review' next.id %}">Next</a> - 
+        {% else %}
+        <a href="{% url 'books:used-review' prev.id %}">Prev</a> - <a href="{% url 'books:used-review' next.id %}">Next</a> - 
+        {% endif %}
+        <a href="http://camelcamelcamel.com/product/{{book.asin}}">Camel</a>
+         - <a href="../../admin/books/book/{{ book.id }}">Edit</a>  - <a href="http://amazon.com/gp/offer-listing/{{ book.asin }}">Amazon</a></p>
+        <table>
+                <tr><td>Current Sales Rank: {{rank.rank}}</td><td>{{rank.rank_date}}</td></tr>
+                <tr><td>Current Low Price: ${{price.price}}</td><td>Sell Score: {{score.total_sell_score}}</td><td>My Price: ${{ book.last_ask_price }}</td></tr>
+        </table>
+        <img src="{% url 'books:book-chart' book.id condition %}" width="400" height="300"/>
+    <form action="{% url 'books:list' book.id %}" method="post">
+        {% csrf_token %}
+        <input type="text" name="Price" id="original_ask_price" value="{{ book.original_ask_price}}" />
+        <input type="text" name="Condition" id="list_condition" value="{{ book.list_condition}}" />
+        
+ 
+        <input type="submit" value="List" />
+        </form>
+
+<ul>
+
+</ul>

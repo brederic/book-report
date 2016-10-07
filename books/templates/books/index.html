@@ -1,0 +1,33 @@
+{% load staticfiles %}
+
+<link rel="stylesheet" type="text/css" href="{% static 'polls/style.css' %}" />
+<h2>Listed Books</h2>
+{% if listed_book_list %}
+    <ul>
+    {% for book in listed_book_list %}
+        <li><a href="{% url 'books:detail' book.id %}">{{ book.book.title }}</a></li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No books are available.</p>
+{% endif %}
+<h2>New Review Books</h2>
+{% if new_review_list %}
+    <ul>
+    {% for book in new_review_list %}
+        <li><a href="{% url 'books:new-review' book.id %}">{{ book.title }}</a></li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No books are available.</p>
+{% endif %}
+<h2>Used Review Books</h2>
+{% if used_review_list %}
+    <ul>
+    {% for book in used_review_list %}
+        <li><a href="{% url 'books:used-review' book.id %}">{{ book.title }}</a></li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No books are available.</p>
+{% endif %}

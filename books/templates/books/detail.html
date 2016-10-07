@@ -1,0 +1,37 @@
+{% load staticfiles %}
+
+<link rel="stylesheet" type="text/css" href="{% static 'books/style.css' %}" />
+
+<h3>{{ book.book.title }} - {{ book.list_condition }} - {{ book.listing_strategy }}</h3>
+{% if book.status == 'RQ' %}
+    <form action="{% url 'books:list' book.id %}" method="post">
+        {% csrf_token %}
+        <input type="text" name="Price" id="original_ask_price" value="{{ book.original_ask_price}}" />
+        <input type="text" name="Condition" id="list_condition" value="{{ book.list_condition}}" />
+        
+ 
+        <input type="submit" value="List" />
+        </form>
+{% endif %}
+{% if book.status == 'LT' %}
+        <p><a href="{% url 'books:index' %}">Home</a> - <a href="{% url 'books:detail' prev.id %}">Prev</a> - <a href="{% url 'books:detail' next.id %}">Next</a> - <a href="http://camelcamelcamel.com/product/{{book.book.asin}}">Camel</a>
+         - <a href="../../admin/books/book/{{ book.book.id }}">Edit</a>  - <a href="http://amazon.com/gp/offer-listing/{{ book.book.asin }}">Amazon</a></p>
+        <table>
+                <tr><td>Purchase Price: ${{ book.purchase_price }}</td><td>Current Sales Rank: {{rank.rank}}</td><td>{{rank.rank_date}}</td></tr>
+                <tr><td>Current Low Price: ${{price.price}}</td><td>Sell Score: {{score.total_sell_score}}</td><td>My Price: ${{ book.last_ask_price }}</td></tr>
+                <tr><td>High Sale Price: ${{price_score.highest_sold_price.price}}</td><td>High Sale Date: {{price_score.highest_sold_price.price_date}}</td><td>My Price: ${{ book.last_ask_price }}</td></tr>
+        </table>
+        <img src="{% url 'books:chart' book.id %}" width="400" height="300"/>
+    <form action="{% url 'books:list' book.id %}" method="post">
+        {% csrf_token %}
+        <input type="text" name="Price" id="original_ask_price" value="{{ book.original_ask_price}}" />
+        <input type="text" name="Condition" id="list_condition" value="{{ book.list_condition}}" />
+        
+ 
+        <input type="submit" value="List" />
+        </form>
+        
+{% endif %}
+<ul>
+
+</ul>
