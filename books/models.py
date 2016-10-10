@@ -110,6 +110,7 @@ class Book(models.Model):
     track = models.BooleanField(default=False, db_index=True)
     newReview = models.BooleanField(default=False, db_index=True)
     usedReview = models.BooleanField(default=False, db_index=True)
+    current_edition = models.ForeignKey('self', null=True, db_index=True)
     
     def __str__(self):             
         return self.title
