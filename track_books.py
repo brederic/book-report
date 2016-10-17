@@ -31,25 +31,32 @@ sales_rank_date = timezone.now()-datetime.timedelta(days=settings.sales_rank_del
 def track_book_prices():
   
     print('Track Books Start Time: ' + time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()))
+    # choose books whose sales rank has stayed above worst_sales_rank for the past year
     scored_books = Book.objects.filter(salesrank__rank_date__gte=sales_rank_date)\
         .annotate(max_sr=Max('salesrank__rank')).filter(max_sr__lte=settings.worst_sales_rank)
+    # set their track flag and clear their review flags
     scored_books.update(track=True, newReview = False, usedReview = False)
+    # get a list of asins for the books we want to track
     tracked_asins = Book.objects.filter(track=True).distinct().values_list('asin', flat=True)
-    #tracked_asins = Book.objects.all().values_list('asin', flat=True)
+    
     total = tracked_asins.count()
+    # throttle our requests 
     delay = 2.05 #s
+    # get price info for 10 books at a time
     for page in range(0, int(math.ceil(total/10))):
       try:
         asin_slice = tracked_asins[page*10:min(total, page*10+10)]
         #print(time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()) + str(asin_slice))
+        # Get used price info
         timeBefore = timezone.now()
         result = amazon_services.get_book_price_info(asin_slice, 'Used')
         processPriceResults(result)
+        # don't overload the API
         elapsedTime = (timezone.now()-timeBefore).microseconds/1e6
         sleepTime = max(0,delay-elapsedTime)
         print('Process took '+ str(elapsedTime) + '. Sleeping for ' + str(sleepTime))
         time.sleep(sleepTime)
-        
+        # Get new price info
         timeBefore = timezone.now()
         result = amazon_services.get_book_price_info(asin_slice, 'New')
         processPriceResults(result)
@@ -57,7 +64,7 @@ def track_book_prices():
         sleepTime = max(0,delay-elapsedTime)
         print('Process took '+ str(elapsedTime) + '. Sleeping for ' + str(sleepTime))
         time.sleep(sleepTime)
-        
+        # Get sales rank info
         timeBefore = timezone.now()
         result = amazon_services.get_book_salesrank_info(asin_slice)
         processSalesRankResults(result)

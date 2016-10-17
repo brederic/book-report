@@ -2,6 +2,7 @@ import sys, getopt
 from requests_toolbelt import SourceAddressAdapter
 import os
 import django
+
 import datetime, time
 from django.db.models import Q, Max, Count, F
 from django.utils import timezone
@@ -20,12 +21,30 @@ django.setup()
 
 MAX_SALES_RANK = 250000
 
+
 import track_books
-from books.models import Book, Price, SalesRank, InventoryBook, Settings, BookScore
+from books.models import Book, Price, SalesRank, InventoryBook, Settings, BookScore, PriceScore
 from django.db.models import Avg, Max, Min
 settings = Settings.objects.all()[0]
 sales_rank_date = timezone.now()-datetime.timedelta(days=settings.sales_rank_delta)
 import amazon_services
+
+from bs4 import BeautifulSoup
+import amazon_services
+import requests
+user_agent = {'User-Agent':'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1'}
+def populate_current_edition(book):
+    asins = { book.asin}
+    print (book.publicationDate)
+    
+    try:
+        result = amazon_services.get_book_info(book.asin)
+        #if result.current_edition:
+        print (result.current_edition.publicationDate)
+    except:
+        return
+    
+        
 
 def check_digit_10(isbn):
     assert len(isbn) == 9
@@ -128,17 +147,33 @@ def total_review_book_cost():
     print('Average review book cost $' + str (total/count))
     
 def populate_book_prices(book, condition):
-    
+        # clear previous price score
+        pricescore = book.get_bookscore().getPriceScore(condition)
+        pricescore.highest_sold_price = None
+        pricescore.save()
+        
         print(' Book['+condition+']: ' + str(book) )
         prices = Price.objects.all().filter(book=book, condition=condition, price__gte=settings.lowest_high_price, 
             price_date__gte=settings.last_semester_start, next_price_higher=True).distinct().order_by('-price')
-
-
         if prices:
             print('\t Max price: $ ' + str(prices[0].price))
             score = book.get_bookscore()
             score.check_sold_price(prices[0])
             score.update_current_price(Price.objects.filter(book=book, condition=condition).latest('price_date'))
+            
+def repopulate_book_prices(asin):
+    book = Book.objects.get(asin=asin)
+    populate_book_prices(book, '1')
+    populate_book_prices(book, '5')
+
+def repopulate_prices():
+    prices = PriceScore.objects.filter(highest_sold_price__price_date__lt=settings.last_semester_start)
+    print('Num of books with old prices:' +str(len(prices)))
+    for price in prices:
+        populate_book_prices(price.highest_sold_price.book, '1')
+        populate_book_prices(price.highest_sold_price.book, '5')
+      
+    
 
 
 def populate_listed_book_prices():
@@ -160,6 +195,9 @@ def populate_prices():
                 book.track=True
                 book.save()
                 populate_book_prices(book, condition)
+                if condition == '5':
+                    populate_current_edition(book)
+                    time.sleep(2.03)
         else:
             break
             
@@ -274,6 +312,56 @@ def test_check_for_alert():
         print(asin)
         book = Book.objects.get(asin=asin)
         book.get_bookscore().check_for_alert()
+        return
+
+def populate_current_editions():
+    #for book in InventoryBook.objects.all().filter(source='AMZ'):
+        book = Book.objects.get(asin='0312609698')
+        #book = book.book
+        print('populate_current_edition(' + str(book)+')')
+        populate_current_edition(book)
+        time.sleep(2)
+        
+    
+def check_current_editions():
+    books= Book.objects.all().exclude(current_edition=None)
+    print(len(books))
+    for book in books:
+        print(str(book))
+        print(book.asin)
+        print(book.publicationDate)
+        print(book.current_edition.asin)
+        print(book.current_edition.publicationDate)
+        
+def gen_sales_data():
+    books=InventoryBook.objects.all().filter(source='AMZ').exclude(status='RQ').exclude(status='CN').exclude(status='DN')
+    print (str(len(books)) + ' records')
+    for book in books:
+        if book.list_condition == '5':
+            condition = '5'
+        else:
+            condition = '1'
+        
+        if book.book.current_edition and book.book.current_edition.publicationDate > book.book.publicationDate:
+            oldEdition = True
+            delta = book.book.current_edition.publicationDate - book.book.publicationDate
+            days =  delta.days 
+            edition_date = book.book.current_edition.publicationDate
+        
+        else:
+            oldEdition = False
+            days = 0
+            edition_date = book.book.publicationDate
+        pricescore = book.book.get_bookscore().getPriceScore(condition)
+        pricescore.highest_sold_price = None
+        pricescore.save()
+        populate_book_prices(book.book, condition)
+        high_price =   book.book.get_bookscore().getPriceScore(condition).highest_sold_price
+        if high_price:
+            print(str(book.list_condition)+ '\t'+ str(high_price.price_date) + '\t' + str(high_price.price)+ '\t' +str(book.book.asin) + '\t' + str(book.book.publicationDate) + '\t' + str(days) + '\t' + str(edition_date) + '\t' + str(book.book.speculative) + '\t' + str(book.request_date)  + '\t' + str(book.sale_date) + '\t' + str(book.sale_price) + '\t' + str(book.purchase_price))
+        else:
+            print(str(book.list_condition)+ '\tNA\tNA\t' +str(book.book.asin) + '\t' + str(book.book.publicationDate) + '\t' + str(days) + '\t' + str(edition_date) + '\t' + str(book.book.speculative) + '\t' + str(book.request_date)  + '\t' + str(book.sale_date) + '\t' + str(book.sale_price) + '\t' + str(book.purchase_price))
+        
        
 
 #find_sold_prices()
@@ -283,8 +371,14 @@ def test_check_for_alert():
 #check_review_data()
 #clean_track()
 #test_check_for_alert()
-monthly_report()
-cost_of_inventory()
+#monthly_report()
+#cost_of_inventory()
 #report_high_sale_price()
 #add_isbn13()
 #fix_fall_price()
+populate_current_editions()
+#populate_current_edition()
+#check_current_editions()
+#gen_sales_data()
+#populate_prices()
+#repopulate_prices()

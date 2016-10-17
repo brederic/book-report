@@ -112,6 +112,27 @@ class Book(models.Model):
     usedReview = models.BooleanField(default=False, db_index=True)
     current_edition = models.ForeignKey('self', null=True, db_index=True)
     
+    def new_edition_date (self):
+        if self.current_edition:
+            if self.current_edition.publicationDate > self.publicationDate:
+                # there is a new edition
+                return self.current_edition.publicationDate
+        return None
+     
+    def high_sale_price_new (self):
+        if self.get_bookscore().getPriceScore('5').highest_sold_price:
+            return str(self.get_bookscore().getPriceScore('5').highest_sold_price)
+        return None
+    def high_sale_price_used (self):
+        if self.get_bookscore().getPriceScore('1').highest_sold_price:
+            return str(self.get_bookscore().getPriceScore('1').highest_sold_price)
+        return None
+        
+        
+    new_edition_date.short_description = "Expiry Date"
+    high_sale_price_new.short_description = "High New $"
+    high_sale_price_used.short_description = "High Used $"
+    
     def __str__(self):             
         return self.title
     
@@ -196,6 +217,10 @@ class InventoryBook(models.Model):
                 self.listing_strategy = '30D'
         if self.listing_strategy == 'HHI':
             self.original_ask_price = self.purchase_price * settings.hold_high_multiple
+            # if highest_sold_price is higher, use that
+            if self.book.get_bookscore().getPriceScore(self.condition).highest_sold_price:
+                if self.book.get_bookscore().getPriceScore(self.condition).highest_sold_price.price > self.original_ask_price:
+                    self.original_ask_price = self.book.get_bookscore().getPriceScore(self.condition).highest_sold_price.price
             self.last_ask_price = self.original_ask_price
         elif self.original_ask_price == None:
             raise InputError(message='Missing ask price')        

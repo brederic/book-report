@@ -23,6 +23,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "book_report.settings")
 django.setup()
 #setup_environ(settings)
 import mail
+import amazon_services
 import books.models
 from books.models import Book, SalesRank, Price
 #NORMAL
@@ -248,6 +249,8 @@ def getSignedUrl(params):
 
     
 
+
+
 def getAmazonInfo(isbn, target_binding):    
     params = {'ResponseGroup':'Offers,SalesRank,Medium',
                      'AssociateTag':'redva-20',
@@ -428,179 +431,8 @@ def addDecimal(priceString):
     return priceString[:len(priceString)-2] + '.' + priceString[len(priceString)-2:]
        
 def processAmazonBook(item):
-    try:
-      book = Book.objects.get(asin=item.ASIN.string)
-    except (Book.DoesNotExist): 
-      book = Book();
-      try:
-        book.asin = item.ASIN.string
-        if (item.ISBN):
-            book.isbn = item.ISBN.string
-        else:
-            book.isbn = book.asin
-        book.title = item.Title.string
-        if (item.Author):
-            book.author = item.Author.string
-        else:
-            if (item.Creator):
-                book.author = item.Creator.string
-        if (item.SmallImage):
-            book.imageLink = item.SmallImage.URL.string
-        if (item.Binding):
-            book.binding = item.Binding.string
-      except AttributeError as e:
-        print("AttributeError in processAmazonBook {0}".format(e))
-        traceback.print_exc()
-        print (item.prettify())
-        return
-      except TypeError as e:
-        print("TypeError in processAmazonBook {0}".format(e))
-        traceback.print_exc()
-        print (item.prettify())
-        return  
-      except django.db.utils.IntegrityError as e:
-        print("IntegrityError in processAmazonBook {0}".format(e))
-        traceback.print_exc()
-        print (item.prettify())
-        return    
-      try:
-          book.publicationDate = item.PublicationDate.string
-          book.save()
-      except (django.core.exceptions.ValidationError):
-          try:
-              book.publicationDate = item.PublicationDate.string + '-01'
-              book.save()
-          except (django.core.exceptions.ValidationError):
-              book.publicationDate = item.PublicationDate.string + '-01-01'
-              book.save()
-      book.save()
-    try:
-      if (item.SalesRank):
-        salesRank = SalesRank()
-        salesRank.book = book
-        salesRank.rank = item.SalesRank.string
-        salesRank.rank_date = timezone.now()
-        salesRank.save
-      if not item.OfferSummary: return
-      if (item.OfferSummary.LowestNewPrice):
-        if (item.OfferSummary.LowestNewPrice.Amount):
-          price = Price()
-          price.book = book
-          price.price = addDecimal(item.OfferSummary.LowestNewPrice.Amount.string)
-          price.condition = '5'
-          price.price_date = timezone.now()
-          price.save()
-      if (item.OfferSummary.LowestUsedPrice):
-        if (item.OfferSummary.LowestUsedPrice.Amount):
-          price = Price()
-          price.book = book
-          price.price = addDecimal(item.OfferSummary.LowestUsedPrice.Amount.string)
-          price.condition = '0'
-          price.price_date = timezone.now()
-          price.save()
-    except AttributeError as e:
-        print("AttributeError in processAmazonBook {0}".format(e))
-        traceback.print_exc()
-        print (item.prettify())
-        return
-    except TypeError as e:
-        print("IOError in processAmazonBook {0}".format(e))
-        traceback.print_exc()
-        print (item.prettify())
-        return  
-    except django.db.utils.IntegrityError as e:
-        print("IntegrityError in processAmazonBook {0}".format(e))
-        traceback.print_exc()
-        print (item.prettify())
-        return      
-    except NameError as e:
-        print("NameError in processAmazonBook {0}".format(e))
-        traceback.print_exc()
-        print (item.prettify())
-        return    
-    except:
-       print("Unknown Error in processAmazonBook {0}".format(sys.exc_info()[0]))
-       traceback.print_exc()
-       print (item.prettify())
-       return
-    return book
+	return amazon_services.processAmazonBook(item, True)
     
-    
-    
-    
-
-def getAmazonTextbookInfo(year, author, title, subject): 
-    WAIT_TIME=2
-    params = {'ResponseGroup':'Offers,SalesRank,Medium',
-                    'AssociateTag':'redva-20',
-                     'Operation':'ItemSearch',
-                     'SearchIndex':'Books', 
-                     'IdType':'ISBN',
-                     'ItemPage':'1',
-                     'Power':'pubdate:during '+year + ' and title-begins:' +title + ' and author-begins:' +author ,
-                     'BrowseNode':'465600',
-                     }
-    url = getSignedUrl(params)
-    error = False
-    book_info = ''
-    try:
-        #atree = etree.parse(url)
-        session = requests.Session()
-        response = session.get(url,headers=user_agent)
-        time.sleep(WAIT_TIME)
-        book_info  = BeautifulSoup(response.text,'xml')
-        if (book_info.find('Error')):
-            if ('AWS.ECommerceService.NoExactMatches' in book_info.find('Error').Code.string): 
-               return             
-            print(book_info.prettify())
-            return
-        #camel_session = getCamelSession()
-        print("Total Results: " + book_info.find('TotalResults').string)
-        if (int(book_info.find('TotalPages').string) == 0): return
-        for page in range(1, min(10, int(book_info.find('TotalPages').string))):
-            params = {'ResponseGroup':'Offers,SalesRank,Medium',
-                    'AssociateTag':'redva-20',
-                     'Operation':'ItemSearch',
-                     'SearchIndex':'Books', 
-                     'IdType':'ISBN',
-                     'ItemPage': str(page),
-                     'Power':'pubdate:during '+year + ' and title-begins:' +title + ' and author-begins:' +author ,
-                     'BrowseNode':'465600',
-                     }
-            url = getSignedUrl(params)
-            response = session.get(url,headers=user_agent)
-            if (book_info.find('Error')):
-                if ('AWS.ECommerceService.NoExactMatches' in book_info.find('Error').Code.string): 
-                    return 
-                print(book_info.prettify())
-                return
-            time.sleep(WAIT_TIME)
-            book_info  = BeautifulSoup(response.text,'xml')
-            for item in book_info.findAll('Item'):
-                asin = item.ASIN.string
-                #print(item.prettify())
-                #processCamelBook(camel_session, asin)
-                processAmazonBook(item)
-                
-                
-            
-
-
-    except IOError as e:
-        print("IOError in getAmazonTextbookInfo: {0}".format(e))
-        #print(book_info.prettify())
-        #time.sleep()
-        return ''
-    except AttributeError as e:
-        print("IOError in getAmazonTextbookInfo: {0}".format(e))
-        print(book_info.prettify())
-        #time.sleep()
-        return ''
-    result = ''
-
-
-    return result
-
 def getCamelSession():
     camel_user = 'brent@brentnrachel.com'
     camel_pass = 'oy8XzjZARrKjmwJHxtJL'
@@ -822,7 +654,7 @@ def scanAmazonTextbooksByYear():
         for title_initial in prefixes:
             for author_initial in prefixes:
                 print('\n\n########'+str(year)+' - ' + title_initial +' - ' + author_initial +'#######\n\n')
-                getAmazonTextbookInfo(str(year), author_initial.upper(),title_initial.upper(),'')
+                amazon_services.getAmazonTextbookInfo(str(year), author_initial.upper(),title_initial.upper(),'')
             
                  
 def scanAllYears(startYear):
