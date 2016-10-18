@@ -31,9 +31,10 @@ sales_rank_date = timezone.now()-datetime.timedelta(days=settings.sales_rank_del
 def track_book_prices():
   
     print('Track Books Start Time: ' + time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()))
-    # choose books whose sales rank has stayed above worst_sales_rank for the past year
-    scored_books = Book.objects.filter(salesrank__rank_date__gte=sales_rank_date)\
-        .annotate(max_sr=Max('salesrank__rank')).filter(max_sr__lte=settings.worst_sales_rank)
+    # choose books whose sales rank has stayed above worst_sales_rank for the past year and whose price has gotten above lowest_high_price in the past year
+    scored_books = Book.objects.filter(price__price_date__gte=sales_rank_date).annotate(max_pr=Max('price__price')).filter(max_pr__lte=settings.lowest_high_price)\
+        .filter(salesrank__rank_date__gte=sales_rank_date).annotate(max_sr=Max('salesrank__rank')).filter(max_sr__lte=settings.worst_sales_rank)
+    print ('track count: ' + str(len(scored_books)))
     # set their track flag and clear their review flags
     scored_books.update(track=True, newReview = False, usedReview = False)
     # get a list of asins for the books we want to track

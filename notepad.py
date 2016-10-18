@@ -91,20 +91,24 @@ def add_isbn13():
 
 def remove_excess_books():
     print ("Removing books that don't meet minimum standards...")
-    # No sales rank
-    books = Book.objects.filter(salesrank__rank_date__gte=sales_rank_date).annotate(num_sr=Count('salesrank')).filter(num_sr=0).annotate(num_ib=Count('inventorybook')).filter(num_ib=0)
-    print('No Sales Rank: ' + str(books.count()))
-    books.delete()
+    ## No sales rank
+    #books = Book.objects.filter(salesrank__rank_date__gte=sales_rank_date).annotate(num_sr=Count('salesrank')).filter(num_sr=0).annotate(num_ib=Count('inventorybook')).filter(num_ib=0)
+    #print('No Sales Rank: ' + str(books.count()))
+    #books.delete()
 
-    # Low sales rank
-    books = Book.objects.filter(salesrank__rank_date__gte=sales_rank_date).annotate(min_sr=Min('salesrank__rank')).filter(min_sr__gte=settings.worst_sales_rank).annotate(num_ib=Count('inventorybook')).filter(num_ib=0)
-    print('Low Sales Rank: ' + str(books.count()))
-    books.delete()
+    ## Low sales rank
+    #books = Book.objects.filter(salesrank__rank_date__gte=sales_rank_date).annotate(min_sr=Min('salesrank__rank')).filter(min_sr__gte=settings.worst_sales_rank).annotate(num_ib=Count('inventorybook')).filter(num_ib=0)
+    #print('Low Sales Rank: ' + str(books.count()))
+    #books.delete()
     
     # Low price
-    books = Book.objects.filter(price__price_date__gte=sales_rank_date).annotate(max_pr=Max('price__price')).filter(max_pr__lte=settings.lowest_high_price/2).annotate(num_ib=Count('inventorybook')).filter(num_ib=0)
-    print('Low Price: ' + str(books.count()))
-    books.delete()
+    while True:
+        books = Book.objects.filter(price__price_date__gte=sales_rank_date).annotate(max_pr=Max('price__price')).filter(max_pr__lte=settings.lowest_high_price).annotate(num_ib=Count('inventorybook')).filter(num_ib=0)[0:1000).values_list("id", flat=True)
+        print('Low Price: ' + str(len(books)))
+        if books:
+            Book.objects.filter(pk__id=list(books)).delete()
+        else:
+            break
    
 
 
@@ -365,7 +369,7 @@ def gen_sales_data():
        
 
 #find_sold_prices()
-#remove_excess_books()
+remove_excess_books()
 #populate_listed_book_prices()
 #total_review_book_cost()
 #check_review_data()
@@ -376,7 +380,7 @@ def gen_sales_data():
 #report_high_sale_price()
 #add_isbn13()
 #fix_fall_price()
-populate_current_editions()
+#populate_current_editions()
 #populate_current_edition()
 #check_current_editions()
 #gen_sales_data()

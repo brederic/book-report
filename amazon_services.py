@@ -154,6 +154,7 @@ def convert_10_to_13(isbn):
     return prefix + check
 
 
+
 def generateFeedContent(feed_type, feed_messages):
     # render feed content from template
     template = env.get_template(templates[feed_type])
@@ -430,7 +431,12 @@ def processAmazonBook(item, do_price):
     try:
         if (item.ISBN):
             book.isbn = item.ISBN.string
-            book.isbn13 = convert_10_to_13(book.isbn)
+            try:
+                book.isbn13 = convert_10_to_13(book.isbn)
+            except AssertionError as e:
+                print("AssertionError in processAmazonBook {0}".format(e))
+                traceback.print_exc()
+                
         else:
             book.isbn = book.asin
         book.title = item.Title.string

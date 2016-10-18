@@ -95,7 +95,11 @@ def score_books():
         
 
 def find_tracked_books():
-    #Book.objects.all().update(track=False, newReview=False, usedReview=False)
+    # Clear flags
+    Book.objects.all().update(track=False, newReview=False, usedReview=False)
+    # Track inventory books
+    Book.objects.filter(inventorybook__request_date__gte=sales_rank_date).update(track=True)
+    
     settings.refresh_from_db()
     #settings.is_scoring_books = False
     if not settings.is_scoring_books:
