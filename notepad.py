@@ -103,7 +103,9 @@ def remove_excess_books():
     
     # Low price
     while True:
-        books = Book.objects.filter(price__price_date__gte=sales_rank_date).annotate(max_pr=Max('price__price')).filter(max_pr__lte=settings.lowest_high_price).annotate(num_ib=Count('inventorybook')).filter(num_ib=0)[0:1000).values_list("id", flat=True)
+        books = Book.objects.filter(price__price_date__gte=sales_rank_date).annotate(max_pr=Max('price__price'))\
+            .filter(max_pr__lte=settings.lowest_high_price).annotate(num_ib=Count('inventorybook'))\
+            .filter(num_ib=0)[:1000].values_list("id", flat=True)
         print('Low Price: ' + str(len(books)))
         if books:
             Book.objects.filter(pk__id=list(books)).delete()
