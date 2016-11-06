@@ -16,6 +16,7 @@ import urllib
 import requests
 from bs4 import BeautifulSoup
 import logging, traceback
+from aws_config import access_key, merchant_id, secret_key, marketplace_id, AWS_USER, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
 
 
 from mws import mws
@@ -23,17 +24,7 @@ import time
 from jinja2 import Environment, FileSystemLoader
 
 
-# MWS ACCESS
-access_key = 'AKIAJMH35VRNAVEPPG6Q'  # replace with your access key
-merchant_id = 'A29SFFIKMBB8UI'  # replace with your merchant id
-# replace with your secret key
-secret_key = '7AEiabc2lNwlyrjXCjCgtIafNB9xNiBUD3ZxAAlD'
-marketplace_id = 'ATVPDKIKX0DER'
 
-# AWS ACCESS
-AWS_ACCESS_KEY_ID = b'AKIAICGOLKQ6JQ2BU33A'
-AWS_SECRET_ACCESS_KEY = '76O3Bm4AAe16H4LLLcVnreOaP+5rmP31Iorp7iLv'
-AWS_USER = 'brentp-20'  # redva-20
 
 user_agent = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1'}
@@ -332,10 +323,11 @@ def getAmazonTextbookInfo(year, author, title, subject):
             time.sleep(WAIT_TIME)
             book_info = BeautifulSoup(response.text, 'xml')
             for item in book_info.findAll('Item'):
-                asin = item.ASIN.string
-                # print(item.prettify())
-                #processCamelBook(camel_session, asin)
-                processAmazonBook(item, True)
+                if item.ASIN:
+                    asin = item.ASIN.string
+                    # print(item.prettify())
+                    #processCamelBook(camel_session, asin)
+                    processAmazonBook(item, True)
  
                 
             
@@ -343,11 +335,13 @@ def getAmazonTextbookInfo(year, author, title, subject):
 
     except IOError as e:
         print("IOError in getAmazonTextbookInfo: {0}".format(e))
-        #print(book_info.prettify())
+        traceback.print_exc()
+        print(book_info.prettify())
         #time.sleep()
         return ''
     except AttributeError as e:
         print("IOError in getAmazonTextbookInfo: {0}".format(e))
+        traceback.print_exc()
         print(book_info.prettify())
         #time.sleep()
         return ''
@@ -433,7 +427,7 @@ def processAmazonBook(item, do_price):
             book.isbn = item.ISBN.string
             try:
                 book.isbn13 = convert_10_to_13(book.isbn)
-            except AssertionError as e:
+            except AssertionEFrror as e:
                 print("AssertionError in processAmazonBook {0}".format(e))
                 traceback.print_exc()
                 
@@ -538,7 +532,8 @@ def processAmazonBook(item, do_price):
 
 if __name__ == "__main__":
     # scanCamelBooks()
-    get_book_infoMWS(['0312157584'])
+    print(access_key)
+    #get_book_infoMWS(['0312157584'])
 
 # reportid = '627535437016739' #replace with report id
 

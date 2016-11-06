@@ -16,6 +16,8 @@ import os
 import django
 import sys
 from django.utils import timezone
+from aws_config import access_key, merchant_id, secret_key, marketplace_id, AWS_USER, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+
 
 sys.path.append('/home/brentp/Projects/book_report')
 
@@ -194,8 +196,6 @@ logger.addHandler(handler)
 
 pbsUrl='http://www.paperbackswap.com/api/v1/index.php?RequestType=RecentlyPosted&Limit=128&Offset=0'
 
-AWS_ACCESS_KEY_ID = b'AKIAJ7H7AAVA77PHAKYQ'
-AWS_SECRET_ACCESS_KEY = '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'
 
 def order_book_with_reporting(title, isbn, book_link, amazon_link, result,  source):
     order_error = order_book(book_link)
@@ -210,40 +210,6 @@ def order_book_with_reporting(title, isbn, book_link, amazon_link, result,  sour
         mail.sendEmail(subject, message )
 
 
-def getSignedUrl(params):
-    myhmac = hmac.new(AWS_SECRET_ACCESS_KEY.encode('utf-8'), digestmod=sha256)
-    action = 'GET'
-    server = "webservices.amazon.com"
-    path = "/onca/xml"
-
- #   params['Version'] = '2009-11-02'
-    params['AWSAccessKeyId'] = AWS_ACCESS_KEY_ID
-    params['Service'] = 'AWSECommerceService'
-    params['Timestamp'] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-
-    # Now sort by keys and make the param string
-    key_values = [(urllib.parse.quote(k), urllib.parse.quote(v)) for k,v in params.items()]
-    key_values.sort()
-
-    # Combine key value pairs into a string.
-    paramstring = '&'.join(['%s=%s' % (k, v) for k, v in key_values])
-    urlstring = "http://" + server + path + "?" + \
-        ('&'.join(['%s=%s' % (k, v) for k, v in key_values]))
-
-    # Add the method and path (always the same, how RESTy!) and get it ready to sign
-    string = action + "\n" + server + "\n" + path + "\n" + paramstring
-
-    myhmac.update(string.encode('utf-8'))
-
-
-
-    # Sign it up and make the url string
-    urlstring = urlstring + "&Signature="+\
-        urllib.parse.quote(base64.encodestring(myhmac.digest()).strip())
-
-    return urlstring
-
-
 
 
 
@@ -253,7 +219,7 @@ def getSignedUrl(params):
 
 def getAmazonInfo(isbn, target_binding):    
     params = {'ResponseGroup':'Offers,SalesRank,Medium',
-                     'AssociateTag':'redva-20',
+                     'AssociateTag':AWS_USER,
                      'Operation':'ItemLookup',
                      'SearchIndex':'Books', 
                      'IdType':'ISBN',
@@ -431,7 +397,7 @@ def addDecimal(priceString):
     return priceString[:len(priceString)-2] + '.' + priceString[len(priceString)-2:]
        
 def processAmazonBook(item):
-	return amazon_services.processAmazonBook(item, True)
+    return amazon_services.processAmazonBook(item, True)
     
 def getCamelSession():
     camel_user = 'brent@brentnrachel.com'
@@ -648,10 +614,12 @@ def scanAllYears():
         
 def scanAmazonTextbooksByYear():
     this_year = timezone.now().year
-    prefixes = { 'a', 'b', 'c','d', 'e', 'f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','0','9','8','7','6','5','4','3','2','1'}
-    for year in reverse_range(this_year,this_year - 20):
-    #for year in reverse_range(1999, 1995):
+    prefixes = [ 'a', 'b', 'c','d', 'e', 'f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','0','9','8','7','6','5','4','3','2','1']
+    prefixes.sort()
+    for year in reverse_range(this_year,this_year - 10):
+        #if (year > 2015): continue 
         for title_initial in prefixes:
+            #if title_initial < 'p': continue
             for author_initial in prefixes:
                 print('\n\n########'+str(year)+' - ' + title_initial +' - ' + author_initial +'#######\n\n')
                 amazon_services.getAmazonTextbookInfo(str(year), author_initial.upper(),title_initial.upper(),'')

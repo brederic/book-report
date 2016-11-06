@@ -5,12 +5,17 @@ import logging, traceback
 import django
 import datetime
 import time
+import mail
 from django.db.models import Q, Max, Count
 from django.utils import timezone
 import math
 from decimal import *
+from django.db import transaction
+
 
 getcontext().prec = 8
+
+
 
 if __name__ == "__main__":
         sys.path.append('/home/brentp/Projects/book_report')
@@ -28,26 +33,41 @@ from books.models import Book, Price, SalesRank, InventoryBook, Settings, FeedLo
 settings = Settings.objects.all()[0]
 sales_rank_date = timezone.now()-datetime.timedelta(days=settings.sales_rank_delta)
 
+def send_email():
+    #send alert
+    msg = 'You may want to start the book delete script now'
+    mail.sendEmail('Track books is finished', msg)
+    
 def track_book_prices():
   
     print('Track Books Start Time: ' + time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()))
     # choose books whose sales rank has stayed above worst_sales_rank for the past year and whose price has gotten above lowest_high_price in the past year
-    scored_books = Book.objects.filter(price__price_date__gte=sales_rank_date).annotate(max_pr=Max('price__price')).filter(max_pr__lte=settings.lowest_high_price)\
-        .filter(salesrank__rank_date__gte=sales_rank_date).annotate(max_sr=Max('salesrank__rank')).filter(max_sr__lte=settings.worst_sales_rank)
+    #scored_books = Book.objects.filter(price__price_date__gte=sales_rank_date).annotate(max_pr=Max('price__price')).filter(max_pr__lte=settings.lowest_high_price)\
+    #   .filter(salesrank__rank_date__gte=sales_rank_date).annotate(max_sr=Max('salesrank__rank')).filter(max_sr__lte=settings.worst_sales_rank)
+    
+    ## only use sales data until we clear out the db some
+    scored_books = Book.objects.filter(salesrank__rank_date__gte=sales_rank_date).annotate(max_sr=Max('salesrank__rank')).filter(max_sr__lte=settings.worst_sales_rank)
+    
+    
     print ('track count: ' + str(len(scored_books)))
+    
     # set their track flag and clear their review flags
     scored_books.update(track=True, newReview = False, usedReview = False)
     # get a list of asins for the books we want to track
-    tracked_asins = Book.objects.filter(track=True).distinct().values_list('asin', flat=True)
+    tracked_asins = list(Book.objects.filter(track=True).distinct().values_list('asin', flat=True))
     
-    total = tracked_asins.count()
+    total = len(tracked_asins)
+    print ('track count: ' + str(total))
+    
     # throttle our requests 
     delay = 2.05 #s
     # get price info for 10 books at a time
     for page in range(0, int(math.ceil(total/10))):
       try:
         asin_slice = tracked_asins[page*10:min(total, page*10+10)]
-        #print(time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()) + str(asin_slice))
+        if len(asin_slice) == 0: 
+            print(time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()) + str(asin_slice))
+            continue
         # Get used price info
         timeBefore = timezone.now()
         result = amazon_services.get_book_price_info(asin_slice, 'Used')
@@ -82,6 +102,7 @@ def track_book_prices():
         print (asin_slice)
         time.sleep(120)
     print('Track Books End Time: ' + time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()))
+    send_email()
 
 def chase_lowest_prices():
     # if there is a price feed waiting to process, don't add another at this time
@@ -117,6 +138,7 @@ def chase_lowest_prices():
     
         #time.sleep(120)
     print('Chase Lowest Price End Time: ' + time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()))
+
 
         
 def processLowPriceResults(books, asins, used_xml, new_xml, changed_prices):
@@ -245,7 +267,35 @@ def processSalesRankResults(xml):
         salesRank.rank = ranktag.Rank.string
         salesRank.rank_date = timezone.now()
         salesRank.save()
+        book.get_bookscore().update_rolling_salesrank()
         book.get_bookscore().check_for_alert()
+        
+def remove_excess_books():
+    print ("Removing books that don't meet minimum standards...")
+    ## No sales rank
+    #books = Book.objects.filter(salesrank__rank_date__gte=sales_rank_date).annotate(num_sr=Count('salesrank')).filter(num_sr=0).annotate(num_ib=Count('inventorybook')).filter(num_ib=0)
+    #print('No Sales Rank: ' + str(books.count()))
+    #books.delete()
+
+    ## Low sales rank
+    #books = Book.objects.filter(salesrank__rank_date__gte=sales_rank_date).annotate(min_sr=Min('salesrank__rank')).filter(min_sr__gte=settings.worst_sales_rank).annotate(num_ib=Count('inventorybook')).filter(num_ib=0)
+    #print('Low Sales Rank: ' + str(books.count()))
+    #books.delete()
+    
+    # Low price
+    return
+    while True:
+        books = Book.objects.filter(price__price_date__gte=sales_rank_date).annotate(max_pr=Max('price__price'))\
+            .filter(max_pr__lte=settings.lowest_high_price).annotate(num_ib=Count('inventorybook'))\
+            .filter(num_ib=0)[:1000]
+        print('Low Price: ' + str(len(books)))
+        if books:
+            with transaction.atomic():
+                for book in books:
+                    book.delete()
+        else:
+            break
+   
     
 def main(argv):
    action = ''

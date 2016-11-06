@@ -9,6 +9,8 @@ from django.utils import timezone
 from decimal import *
 import mail
 from dateutil.relativedelta import relativedelta
+from django.db import transaction
+
 
 
 getcontext().prec = 8
@@ -105,10 +107,12 @@ def remove_excess_books():
     while True:
         books = Book.objects.filter(price__price_date__gte=sales_rank_date).annotate(max_pr=Max('price__price'))\
             .filter(max_pr__lte=settings.lowest_high_price).annotate(num_ib=Count('inventorybook'))\
-            .filter(num_ib=0)[:1000].values_list("id", flat=True)
+            .filter(num_ib=0)[:1000]
         print('Low Price: ' + str(len(books)))
         if books:
-            Book.objects.filter(pk__id=list(books)).delete()
+            with transaction.atomic():
+                for book in books:
+                    book.delete()
         else:
             break
    
@@ -273,7 +277,7 @@ def report_high_sale_price():
         
 
 def monthly_report():
-  for month in range(9,10):
+  for month in range(10,11):
     # Purchases
     target_date_start = timezone.datetime(2016,month,1) 
     target_date_end = timezone.datetime(2016,month+1,1) 
@@ -368,10 +372,16 @@ def gen_sales_data():
         else:
             print(str(book.list_condition)+ '\tNA\tNA\t' +str(book.book.asin) + '\t' + str(book.book.publicationDate) + '\t' + str(days) + '\t' + str(edition_date) + '\t' + str(book.book.speculative) + '\t' + str(book.request_date)  + '\t' + str(book.sale_date) + '\t' + str(book.sale_price) + '\t' + str(book.purchase_price))
         
-       
+def list_editions():
+    books = Book.objects.exclude(current_edition=None)
+    for book in books:
+        if book.new_edition_date() != None:
+            print(book.asin + ';'+str(book.new_edition_date()))
+        else:
+            print(book.asin + ';1900-01-01')
 
 #find_sold_prices()
-remove_excess_books()
+#remove_excess_books()
 #populate_listed_book_prices()
 #total_review_book_cost()
 #check_review_data()
@@ -388,3 +398,4 @@ remove_excess_books()
 #gen_sales_data()
 #populate_prices()
 #repopulate_prices()
+list_editions()
