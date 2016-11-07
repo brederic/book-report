@@ -109,6 +109,7 @@ class Book(models.Model):
     binding = models.CharField(max_length=15, blank=True)
     author = models.CharField(max_length=50, blank=True)
     imageLink = models.CharField(max_length=100, blank=True)
+    edition = models.CharField(max_length=30, blank=True)
     publicationDate = models.DateField(null=True, blank=True)
     watch = models.BooleanField(default=False, db_index=True)
     ignore = models.BooleanField(default=False, db_index=True)
@@ -118,12 +119,29 @@ class Book(models.Model):
     newReview = models.BooleanField(default=False, db_index=True)
     usedReview = models.BooleanField(default=False, db_index=True)
     current_edition = models.ForeignKey('self', null=True, db_index=True)
+    previous_edition = models.BooleanField(default=False, db_index=True)
+    
     
     def new_edition_date (self):
+        self.previous_edition = False
+        self.save()
         if self.current_edition:
             if self.current_edition.publicationDate > self.publicationDate:
-                # there is a new edition
-                return self.current_edition.publicationDate
+                # there is a new edition, see if any other editions come between us and it
+                books = Book.objects.filter(current_edition=self.current_edition).order_by('-publicationDate')
+                if self.publicationDate == books[0].publicationDate:
+                    self.previous_edition = True
+                    self.save()
+                    return self.current_edition.publicationDate
+                else: # keep looking for self in list
+                    previous_edition = None
+                    for item in books:
+                        if self == item:
+                            break
+                        else:
+                            if item.publicationDate > self.publicationDate:
+                                previous_edition = item
+                    return previous_edition.publicationDate
         return None
      
     def high_sale_price_new (self):
@@ -142,6 +160,13 @@ class Book(models.Model):
                 return True
         
         return False
+        
+        
+    def is_previous_edition (self):
+        if self.previous_edition == None:
+            new_edition_date()
+        self.refresh_from_db()
+        return self.previous_edition
         
         
     new_edition_date.short_description = "Expiry Date"
@@ -389,17 +414,17 @@ class BookScore(models.Model):
             print('yes')
             # To give an alert on a new book it has to be below the discount threshold AND the minimum new price
             if newPriceScore.get_current_price_score()<settings.target_discount and newPriceScore.most_recent_price.price <= settings.max_new_purchase_price:
-                # It has to have current edition information
-                if not self.book.current_edition == None:
+                # It has to be a current or previous edition
+                if self.book.is_current_edition() or self.book.is_previous_edition():
                     print('new')
                     newTarget= True
             if usedPriceScore.get_current_price_score()<settings.target_discount and usedPriceScore.most_recent_price.price<= settings.max_used_purchase_price:
                 #usedTarget = True
-                # It has to be a current edition or have a recent expiration date
+                # It has to be a current edition or be the previous edition and have a recent expiration date
                 if self.book.is_current_edition():
                     usedTarget = True
                 if not self.book.new_edition_date() == None:
-                    if self.book.new_edition_date() > settings.oldest_expiration_used:
+                    if self.book.is_previous_edition and self.book.new_edition_date() > settings.oldest_expiration_used:
                         usedTarget = True
                         print('used')
             if newTarget or usedTarget:

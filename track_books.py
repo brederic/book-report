@@ -48,8 +48,11 @@ def track_book_prices():
     ## only use sales data until we clear out the db some
     scored_books = Book.objects.filter(salesrank__rank_date__gte=sales_rank_date).annotate(max_sr=Max('salesrank__rank')).filter(max_sr__lte=settings.worst_sales_rank)
     
+    #scored_books = Book.objects.exclude(current_edition=None)
     
-    print ('track count: ' + str(len(scored_books)))
+    
+    
+    #print ('track count: ' + str(len(scored_books)))
     
     # set their track flag and clear their review flags
     scored_books.update(track=True, newReview = False, usedReview = False)
@@ -102,6 +105,59 @@ def track_book_prices():
         print (asin_slice)
         time.sleep(120)
     print('Track Books End Time: ' + time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()))
+    send_email()
+
+def track_book_metadata():
+    
+    print('Track Books Metadata Start Time: ' + time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()))
+    # choose books whose sales rank has stayed above worst_sales_rank for the past year and whose price has gotten above lowest_high_price in the past year
+    #scored_books = Book.objects.filter(price__price_date__gte=sales_rank_date).annotate(max_pr=Max('price__price')).filter(max_pr__lte=settings.lowest_high_price)\
+    #   .filter(salesrank__rank_date__gte=sales_rank_date).annotate(max_sr=Max('salesrank__rank')).filter(max_sr__lte=settings.worst_sales_rank)
+    
+    ## only use sales data until we clear out the db some
+    #scored_books = Book.objects.filter(salesrank__rank_date__gte=sales_rank_date).annotate(max_sr=Max('salesrank__rank')).filter(max_sr__lte=settings.worst_sales_rank)
+    
+    #scored_books = Book.objects.exclude(current_edition=None)
+    
+    
+    
+    #print ('track count: ' + str(len(scored_books)))
+    
+    # set their track flag and clear their review flags
+    #scored_books.update(track=True, newReview = False, usedReview = False)
+    # get a list of asins for the books we want to track
+    tracked_asins = list(Book.objects.exclude(current_edition=None).distinct().values_list('asin', flat=True))
+    
+    total = len(tracked_asins)
+    print ('track count: ' + str(total))
+    
+    # throttle our requests 
+    delay = 2.05 #s
+    # get price info for 10 books at a time
+    for page in range(0, int(math.ceil(total/10))):
+      try:
+        asin_slice = tracked_asins[page*10:min(total, page*10+10)]
+        if len(asin_slice) == 0: 
+            print(time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()) + str(asin_slice))
+            continue
+        # Get metadata
+        timeBefore = timezone.now()
+        result = amazon_services.get_book_metadata(asin_slice)
+        
+        
+        elapsedTime = (timezone.now()-timeBefore).microseconds/1e6
+        sleepTime = max(0,delay-elapsedTime)
+        print('Process took '+ str(elapsedTime) + '. Sleeping for ' + str(sleepTime))
+        time.sleep(sleepTime)
+        
+    
+        
+      except:
+        print("Unknown Error in track_book_metadata {0}".format(sys.exc_info()[0]))
+        traceback.print_exc()
+        print (asin_slice)
+        time.sleep(120)
+    print('Track Books Metadata End Time: ' + time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()))
     send_email()
 
 def chase_lowest_prices():
@@ -309,6 +365,7 @@ def main(argv):
       print ('   Available actions:')
       print ('      track-prices - get updated prices  ')
       print ('      chase-lowest-price - keep prices low on listed books with LOW strategy')
+      print ('      metadata-scan - reload and store metadata ')
 
       sys.exit(2)
    for opt, arg in opts:
@@ -322,6 +379,8 @@ def main(argv):
        chase_lowest_prices()
    if (action == 'track-prices' or action == ''):
        track_book_prices()
+   if (action == 'metadata-scan' or action == ''):
+       track_book_metadata()
 
    
    #print 'Input file is "', inputfile
@@ -330,6 +389,7 @@ def main(argv):
 if __name__ == "__main__":
     #scanCamelBooks()
    main(sys.argv[1:])
+   
 #if __name__ == "__main__":
 #    chase_lowest_prices()
 #    track_book_prices()

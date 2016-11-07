@@ -364,7 +364,7 @@ def get_book_info(asin):
     book_info = BeautifulSoup(response.text, 'xml')
     print('get_book_info(' + asin + ')')
     if book_info.find('Item'):
-        # print(book_info.prettify())
+        #print(book_info.prettify())
         return processAmazonBook(book_info.find('Item'), False)
     else:
         print(book_info.prettify())
@@ -393,6 +393,26 @@ def get_book_price_info(asins, condition):
 
     return result
 
+def get_book_metadata(asins):
+    params = {'ResponseGroup': 'Offers,SalesRank,Medium,RelatedItems',
+              'AssociateTag': AWS_USER,
+              'Operation': 'ItemLookup',
+              'IdType': 'ASIN',
+              'RelationshipType': 'NewerVersion',
+              'ItemId': ",".join(asins )}
+    url = getSignedUrl(params)
+
+    session = requests.Session()
+    response = session.get(url, headers=user_agent)
+    book_info = BeautifulSoup(response.text, 'xml')
+    print('get_book_info(' + str(asins) + ')')
+    if book_info.find('Item'):
+        #print(book_info.prettify())
+        return processAmazonBooks(book_info)
+    else:
+        print(book_info.prettify())
+    
+
 
 def get_book_salesrank_info(asins):
 
@@ -405,7 +425,15 @@ def get_book_salesrank_info(asins):
     return result
 
 
+def processAmazonBooks(result):
+    print(result.prettify())
+    books = result.findAll('Item');
+    for item in books:
+        processAmazonBook(item, False)
+        
+    
 def processAmazonBook(item, do_price):
+    print(item.prettify())
     try:
         book = Book.objects.get(asin=item.ASIN.string)
         #print('book is already in db')
@@ -443,6 +471,8 @@ def processAmazonBook(item, do_price):
             book.imageLink = item.SmallImage.URL.string
         if (item.Binding):
             book.binding = item.Binding.string
+        if (item.Edition):
+            book.edition = item.Edition.string.translate(None, string.letters)
         if (item.RelatedItem):
             asin = item.RelatedItem.Item.ASIN.string
             print('find related item with asin: ' + asin)
@@ -534,9 +564,11 @@ if __name__ == "__main__":
     # scanCamelBooks()
     print(access_key)
     #get_book_infoMWS(['0312157584'])
+    get_book_info('0205891500')
 
 # reportid = '627535437016739' #replace with report id
 
 #report = x.get_report(report_id=reportid)
 #response_data = report
 #print (response_data)
+

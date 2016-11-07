@@ -35,10 +35,10 @@ class PriceInline(admin.TabularInline):
 
 class BookAdmin(admin.ModelAdmin):
     fieldsets = [
-            (None,               {'fields': ['title','asin', 'isbn13', 'newReview', 'usedReview', 'is_current_edition', 'new_edition_date', 'high_sale_price_new', 'high_sale_price_used','watch', 'ignore', 'speculative', 'high_sale_price_updated']}),
+            (None,               {'fields': ['title','asin', 'isbn13', 'newReview', 'usedReview', 'edition','is_current_edition', 'is_previous_edition', 'new_edition_date', 'high_sale_price_new', 'high_sale_price_used','watch', 'ignore', 'speculative', 'high_sale_price_updated']}),
         ('Details', {'fields': ['author', 'binding'], 'classes': ['collapse']}),
     ]
-    readonly_fields = ['is_current_edition','new_edition_date','high_sale_price_new','high_sale_price_used']
+    readonly_fields = ['edition','is_current_edition','is_previous_edition','new_edition_date','high_sale_price_new','high_sale_price_used']
         
     def get_score(self, obj):
         #return obj.bookscore__score

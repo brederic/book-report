@@ -376,9 +376,9 @@ def list_editions():
     books = Book.objects.exclude(current_edition=None)
     for book in books:
         if book.new_edition_date() != None:
-            print(book.asin + ';'+str(book.new_edition_date()))
+            print(book.asin + ';'+str(book.new_edition_date())+';'+ str(book.is_current_edition())+';'+str(book.is_previous_edition()))
         else:
-            print(book.asin + ';1900-01-01')
+            print(book.asin + ';;'+ str(book.is_current_edition())+';' + str(book.is_previous_edition()))
 
 #find_sold_prices()
 #remove_excess_books()
