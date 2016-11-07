@@ -11,6 +11,7 @@ from django.utils import timezone
 import math
 from decimal import *
 from django.db import transaction
+import string
 
 
 getcontext().prec = 8

@@ -426,14 +426,14 @@ def get_book_salesrank_info(asins):
 
 
 def processAmazonBooks(result):
-    print(result.prettify())
+    #print(result.prettify())
     books = result.findAll('Item');
     for item in books:
         processAmazonBook(item, False)
         
     
 def processAmazonBook(item, do_price):
-    print(item.prettify())
+    #print(item.prettify())
     try:
         book = Book.objects.get(asin=item.ASIN.string)
         #print('book is already in db')
@@ -472,7 +472,7 @@ def processAmazonBook(item, do_price):
         if (item.Binding):
             book.binding = item.Binding.string
         if (item.Edition):
-            book.edition = item.Edition.string.translate(None, string.letters)
+            book.edition = item.Edition.string
         if (item.RelatedItem):
             asin = item.RelatedItem.Item.ASIN.string
             print('find related item with asin: ' + asin)
