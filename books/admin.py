@@ -31,14 +31,14 @@ class PriceInline(admin.TabularInline):
         """Alter the queryset to return no existing entries"""
         # get the existing query set, then empty it.
         qs = super(PriceInline, self).get_queryset(request)
-        return qs.none()  
+        return qs.none()
 
 class BookAdmin(admin.ModelAdmin):
     fieldsets = [
-            (None,               {'fields': ['title','asin', 'isbn13', 'newReview', 'usedReview', 'edition','is_current_edition', 'is_previous_edition', 'new_edition_date', 'high_sale_price_new', 'high_sale_price_used','watch', 'ignore', 'speculative', 'high_sale_price_updated']}),
+            (None,               {'fields': ['title','asin', 'isbn13', 'newReview', 'usedReview', 'edition','is_current_edition', 'is_previous_edition', 'new_edition_date', 'high_sale_price_new', 'current_price_new','high_sale_price_used', 'current_price_used', 'watch', 'ignore', 'speculative', 'high_sale_price_updated']}),
         ('Details', {'fields': ['author', 'binding'], 'classes': ['collapse']}),
     ]
-    readonly_fields = ['edition','is_current_edition','is_previous_edition','new_edition_date','high_sale_price_new','high_sale_price_used']
+    readonly_fields = ['edition','is_current_edition','is_previous_edition','new_edition_date','high_sale_price_new','high_sale_price_used', 'current_price_new', 'current_price_used']
         
     def get_score(self, obj):
         #return obj.bookscore__score
@@ -50,7 +50,7 @@ class BookAdmin(admin.ModelAdmin):
     inlines = [InventoryBookInline, PriceInline]
     list_display = ('title', 'get_score', 'asin', 'track', 'is_current_edition','new_edition_date')
     search_fields = ['asin', 'title', 'isbn']
-    list_filter = ['track', 'newReview','usedReview', 'watch']
+    list_filter = ['track', 'newReview','usedReview', 'watch', 'high_sale_price_updated']
     #title.admin_order_field='book__title'
     get_score.admin_order_field = 'bookscore__rolling_salesrank_score'
     get_score.short_description = 'Score'

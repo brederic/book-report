@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
 MAX_SALES_RANK = 250000
 
-import amazon, amazon_services, feeds
+import amazon, amazon_services, feeds, data_cleanup
 from books.models import Book, Price, SalesRank, InventoryBook, Settings, FeedLog, SUB_CONDITION_CHOICES
 
 settings = Settings.objects.all()[0]
@@ -49,7 +49,7 @@ def track_book_prices():
     ## only use sales data until we clear out the db some
     scored_books = Book.objects.filter(salesrank__rank_date__gte=sales_rank_date).annotate(max_sr=Max('salesrank__rank')).filter(max_sr__lte=settings.worst_sales_rank)
     
-    #scored_books = Book.objects.exclude(current_edition=None)
+    #scored_books = Book.objects.filter(asin='1405182407')
     
     
     
@@ -59,6 +59,7 @@ def track_book_prices():
     scored_books.update(track=True, newReview = False, usedReview = False)
     # get a list of asins for the books we want to track
     tracked_asins = list(Book.objects.filter(track=True).distinct().values_list('asin', flat=True))
+    #tracked_asins = list(Book.objects.filter(asin='1405182407').distinct().values_list('asin', flat=True))
     
     total = len(tracked_asins)
     print ('track count: ' + str(total))
@@ -77,26 +78,29 @@ def track_book_prices():
         result = amazon_services.get_book_price_info(asin_slice, 'Used')
         processPriceResults(result)
         # don't overload the API
-        elapsedTime = (timezone.now()-timeBefore).microseconds/1e6
+        elapsedTime = (timezone.now()-timeBefore).total_seconds()
         sleepTime = max(0,delay-elapsedTime)
         print('Process took '+ str(elapsedTime) + '. Sleeping for ' + str(sleepTime))
-        time.sleep(sleepTime)
+        data_cleanup.clean_books(sleepTime)
+        #time.sleep(sleepTime)
         # Get new price info
         timeBefore = timezone.now()
         result = amazon_services.get_book_price_info(asin_slice, 'New')
         processPriceResults(result)
-        elapsedTime = (timezone.now()-timeBefore).microseconds/1e6
+        elapsedTime = (timezone.now()-timeBefore).total_seconds()
         sleepTime = max(0,delay-elapsedTime)
         print('Process took '+ str(elapsedTime) + '. Sleeping for ' + str(sleepTime))
-        time.sleep(sleepTime)
+        data_cleanup.clean_books(sleepTime)
+        #time.sleep(sleepTime)
         # Get sales rank info
         timeBefore = timezone.now()
         result = amazon_services.get_book_salesrank_info(asin_slice)
         processSalesRankResults(result)
-        elapsedTime = (timezone.now()-timeBefore).microseconds/1e6
+        elapsedTime = (timezone.now()-timeBefore).total_seconds()
         sleepTime = max(0,delay-elapsedTime)
         print('Process took '+ str(elapsedTime) + '. Sleeping for ' + str(sleepTime))
-        time.sleep(sleepTime)
+        data_cleanup.clean_books(sleepTime)
+        #time.sleep(sleepTime)
         
     
         
@@ -146,7 +150,7 @@ def track_book_metadata():
         result = amazon_services.get_book_metadata(asin_slice)
         
         
-        elapsedTime = (timezone.now()-timeBefore).microseconds/1e6
+        elapsedTime = (timezone.now()-timeBefore).total_seconds()
         sleepTime = max(0,delay-elapsedTime)
         print('Process took '+ str(elapsedTime) + '. Sleeping for ' + str(sleepTime))
         time.sleep(sleepTime)
@@ -289,6 +293,7 @@ def chase_low_price_used(book, used_xml, new_xml):
         
 def processPriceResults(xml):
     for product in xml.find_all('Product'):
+        #print(product.prettify())
         asin = product.find('ASIN').string
         book = Book.objects.get(asin=asin)
         price = Price()
@@ -303,6 +308,12 @@ def processPriceResults(xml):
             price.condition = '5'
         elif condition == 'Used':
             price.condition = '0'
+            # get first price that has better than acceptable subcondition
+            sc = product.find('ItemSubcondition',string=["Good", "VeryGood", "LikeNew"])
+            if sc:
+                price.good_price = sc.parent.parent.Price.LandedPrice.Amount.string
+            else:
+                price.good_price = float(price.price)*1.1
         price.price_date = timezone.now()
         price.save()
         #print(str(book) + str(price))

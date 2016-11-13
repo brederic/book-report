@@ -152,6 +152,15 @@ class Book(models.Model):
         if self.get_bookscore().getPriceScore('1').highest_sold_price:
             return str(self.get_bookscore().getPriceScore('1').highest_sold_price)
         return None
+             
+    def current_price_new (self):
+        if self.get_bookscore().getPriceScore('5').most_recent_price:
+            return str(self.get_bookscore().getPriceScore('5').most_recent_price)
+        return None
+    def current_price_used (self):
+        if self.get_bookscore().getPriceScore('0').most_recent_price:
+            return str(self.get_bookscore().getPriceScore('0').most_recent_price)
+        return None
         
     def is_current_edition (self):
         if self.current_edition:
@@ -290,8 +299,11 @@ class Price(models.Model):
     price_date = models.DateTimeField( db_index=True) 
     condition = models.CharField(max_length=1, choices=CONDITION_CHOICES,db_index=True)
     price = models.DecimalField(max_digits=11, decimal_places=2, db_index=True)
+    description = models.CharField(max_length=100, blank=True)
     most_recent = models.BooleanField(default=False)
     next_price_higher = models.BooleanField(default=False, db_index=True)
+    good_price = models.DecimalField(max_digits=11, null=True,blank=True, decimal_places=2)
+    good_description = models.CharField(max_length=100, blank=True)
     
     class Meta:
         index_together = [['price_date', 'price', 'book']]
@@ -338,7 +350,7 @@ class Price(models.Model):
 
 
     def __str__(self):             
-        return self.book.title + ' [$' + str(self.price) + ' ' + self.condition +' ' + self.price_date.strftime('%x')+']'  
+        return self.book.title + ' [$' + str(self.price) + ' ' + self.condition +' ' + self.price_date.strftime('%x')+ " $"+ str(self.good_price)+']'  
             
 class SalesRank(models.Model):
     book = models.ForeignKey(Book, db_index=True)
@@ -418,7 +430,7 @@ class BookScore(models.Model):
                 if self.book.is_current_edition() or self.book.is_previous_edition():
                     print('new')
                     newTarget= True
-            if usedPriceScore.get_current_price_score()<settings.target_discount and usedPriceScore.most_recent_price.price<= settings.max_used_purchase_price:
+            if usedPriceScore.get_current_price_score()<settings.target_discount and usedPriceScore.most_recent_price.good_price<= settings.max_used_purchase_price:
                 #usedTarget = True
                 # It has to be a current edition or be the previous edition and have a recent expiration date
                 if self.book.is_current_edition():
