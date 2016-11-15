@@ -31,7 +31,7 @@ user_agent = {
 
 
 env = Environment(
-    loader=FileSystemLoader('/home/brentp/Projects/boto_test/templates'),
+    loader=FileSystemLoader('/home/brentp/Projects/book_report/templates'),
     trim_blocks=True,
     lstrip_blocks=True)
 
@@ -81,9 +81,10 @@ templates = {
 
 class PriceMessage(object):
 
-    def __init__(self, sku, price):
+    def __init__(self, sku, price, maxPrice):
         self.SKU = sku
         self.Value = price
+        self.MaxPrice = maxPrice
 
 
 class ProductMessage(object):

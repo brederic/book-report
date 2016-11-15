@@ -83,7 +83,7 @@ def generate_price_feed(queryset):
     feed_messages = []
     for book in queryset:
         print('Sending price feed for: ' + str(book))
-        message = amazon_services.PriceMessage(book.sku, book.original_ask_price)
+        message = amazon_services.PriceMessage(book.sku, book.original_ask_price, book.original_ask_price)
         feed_messages.append(message)
     feed_xml =  amazon_services.generateFeedContent(amazon.PRICE_FEED, feed_messages)
     request_feed(amazon.PRICE_FEED, feed_xml, queryset)

@@ -501,5 +501,5 @@ def test_book_price():
 #list_editions()
 #clean_book_by_asin('0321426770')
 #clean_books()
-#count_cleaned_books()
-test_book_price()
+count_cleaned_books()
+#test_book_price()
