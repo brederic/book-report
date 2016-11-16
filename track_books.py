@@ -391,7 +391,7 @@ def main(argv):
        chase_lowest_prices()
    if (action == 'track-prices' or action == ''):
        track_book_prices()
-   if (action == 'metadata-scan' or action == ''):
+   if (action == 'metadata-scan' ):
        track_book_metadata()
 
    
@@ -400,8 +400,16 @@ def main(argv):
 
 if __name__ == "__main__":
     #scanCamelBooks()
-   main(sys.argv[1:])
-   
-#if __name__ == "__main__":
-#    chase_lowest_prices()
-#    track_book_prices()
+    main(sys.argv[1:])
+    print('No Edition, Good rank:')
+    data_cleanup.clean_book_by_asin('0745684491')
+    print('Has Edition:')
+    data_cleanup.clean_book_by_asin('0397547838')
+    print('Has Inventory:')
+    data_cleanup.clean_book_by_asin('0786911751')
+    print('No Salesrank or Price:')
+    data_cleanup.clean_book_by_asin('0781793483')
+    print('?:')
+    data_cleanup.clean_book_by_asin('0471191124')
+    
+    

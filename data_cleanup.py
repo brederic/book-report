@@ -76,6 +76,44 @@ def clean_book_by_asin(asin):
     book = Book.objects.all().filter(asin=asin)[0]
     print("Book: " +str(book))
     clean_book(book)                
+
+# check reasons to keep a book from fastest to slowest
+def shouldWeSaveThisBook(book):
+    reason = None
+    while True:
+        # has edition information
+        if not book.current_edition == None:
+            reason = "Has edition information"
+            break
+        # if we have ever bought this book
+        inventory = InventoryBook.objects.all().filter(book=book)
+        if len(inventory) > 0:
+            reason = "Has inventory"
+            break
+        # if it has stayed above our target salesrank in the last year
+        max_rank = SalesRank.objects.all().filter(book=book, rank_date__gte=sales_rank_date).aggregate(max_sr=Max('rank'))['max_sr']
+        print("Salesrank: " + str(max_rank))
+        if not max_rank == None:
+            if max_rank <= settings.worst_sales_rank:
+                reason = "Has good salesrank"
+                break
+        # if it has sold above our target price in the last year; either condition will do
+        max_price = Price.objects.all().filter(book=book, price_date__gte=sales_rank_date).aggregate(max_price=Max('price'))['max_price']
+        print("Price: " + str(max_price))
+        if not max_price == None:
+            if max_price >= settings.lowest_high_price:
+                reason = "Has good price"
+                break
+        # done with testing
+        break
+    if not reason == None:
+        print("Keep this book: "+reason)
+        return True
+    else:
+        print ("Don't keep this book")
+        return False
+    
+    
     
 def clean_book(book):
     prices = Price.objects.all().filter(book=book, condition='5').order_by("-price_date")
@@ -104,7 +142,10 @@ def clean_books(target_time):
         print('clean books took '+ str(elapsedTime))
         return
     for book in books:
-        clean_book(book)
+        if not shouldWeSaveThisBook(book):
+            book.delete()
+        else:    
+            clean_book(book)
         elapsedTime = (timezone.now()-timeBefore).total_seconds()
         if elapsedTime > target_time - margin:
             print ("Time is up.")
@@ -115,3 +156,6 @@ def clean_books(target_time):
     print('clean books took '+ str(elapsedTime) + '. Sleeping for ' + str(sleepTime))
     time.sleep(sleepTime)
         
+if __name__ == "__main__":
+    print('No Edition:')
+    clean_book_by_asin('0745684491')
