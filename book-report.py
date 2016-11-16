@@ -224,7 +224,7 @@ def getAmazonInfo(isbn, target_binding):
                      'SearchIndex':'Books', 
                      'IdType':'ISBN',
                      'ItemId':isbn}
-    url = getSignedUrl(params)
+    url = amazon_services.getSignedUrl(params)
     error = False
     try:
         #atree = etree.parse(url)

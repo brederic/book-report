@@ -89,20 +89,24 @@ def clean_book(book):
 
 
 def clean_books(target_time):
-    if target_time == 0: return
+    # don't continue cleaning if we have less than this amount of time left
+    margin = 0.5 
+    if target_time < margin: 
+        time.sleep(target_time)
+        return
     #Book.objects.all().update(ignore=False)
     #target_time = 2
     
     timeBefore = timezone.now()
     books = Book.objects.exclude(high_sale_price_updated=True)[0:100]
     elapsedTime = (timezone.now()-timeBefore).total_seconds()
-    if elapsedTime > target_time:
+    if elapsedTime > target_time - margin:
         print('clean books took '+ str(elapsedTime))
         return
     for book in books:
         clean_book(book)
         elapsedTime = (timezone.now()-timeBefore).total_seconds()
-        if elapsedTime > target_time:
+        if elapsedTime > target_time - margin:
             print ("Time is up.")
             break
         else:
