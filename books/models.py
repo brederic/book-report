@@ -121,6 +121,12 @@ class Book(models.Model):
     current_edition = models.ForeignKey('self', null=True, db_index=True)
     previous_edition = models.BooleanField(default=False, db_index=True)
     
+    def amazon_link(self):
+      return '<a href="http://smile.amazon.com/dp/%s" target="_blank">Buy on Amazon</a>' %   escape(self.asin) 
+
+    amazon_link.allow_tags = True
+    amazon_link.short_description = "Amazon" 
+    
     
     def new_edition_date (self):
         self.previous_edition = False
