@@ -473,6 +473,9 @@ def count_cleaned_books():
     books = Book.objects.all().values('asin').filter(high_sale_price_updated=False)
     
     print ("Unprocessed " +str(len(books)))
+    books = Book.objects.all().values('asin')
+    
+    print ("All " +str(len(books)))
     
 def test_book_price():
     book = Book.objects.all().filter(asin='1285165918')[0]

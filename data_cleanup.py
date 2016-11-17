@@ -116,19 +116,19 @@ def shouldWeSaveThisBook(book):
     
     
 def clean_book(book):
-    prices = Price.objects.all().filter(book=book, condition='5').order_by("-price_date")
-    print("New Price count: " + str(len(prices)))
-    clean_prices(prices)
-    prices = Price.objects.all().filter(book=book, condition='0').order_by("-price_date")
-    print("Used Price count: " + str(len(prices)))
-    clean_prices(prices)
+    #prices = Price.objects.all().filter(book=book, condition='5').order_by("-price_date")
+    #print("New Price count: " + str(len(prices)))
+    #clean_prices(prices)
+    #prices = Price.objects.all().filter(book=book, condition='0').order_by("-price_date")
+    #print("Used Price count: " + str(len(prices)))
+    #clean_prices(prices)
     book.high_sale_price_updated = True
     book.save()
 
 
 def clean_books(target_time):
     # don't continue cleaning if we have less than this amount of time left
-    margin = 0.5 
+    margin = 0.1
     if target_time < margin: 
         time.sleep(target_time)
         return
