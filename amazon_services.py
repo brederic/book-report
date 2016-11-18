@@ -348,6 +348,12 @@ def getAmazonTextbookInfo(year, author, title, subject):
         print(book_info.prettify())
         #time.sleep()
         return ''
+    except Exception as e:
+        print("Exception in getAmazonTextbookInfo: {0}".format(e))
+        traceback.print_exc()
+        print(book_info.prettify())
+        #time.sleep()
+        return ''
     result = ''
 
 
