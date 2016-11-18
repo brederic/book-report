@@ -295,7 +295,10 @@ def processPriceResults(xml):
     for product in xml.find_all('Product'):
         #print(product.prettify())
         asin = product.find('ASIN').string
-        book = Book.objects.get(asin=asin)
+        try:
+            book = Book.objects.get(asin=asin)
+        except:
+            continue
         price = Price()
         price.book = book
         if not product.find('Price'):
@@ -322,7 +325,10 @@ def processSalesRankResults(xml):
     #print(xml.prettify())
     for product in xml.find_all('Product'):
         asin = product.find('ASIN').string
-        book = Book.objects.get(asin=asin)
+        try:
+            book = Book.objects.get(asin=asin)
+        except:
+            continue
         ranktag = product.find('SalesRank')
         if not ranktag:
             return
