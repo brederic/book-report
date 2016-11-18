@@ -23,6 +23,8 @@ from mws import mws
 import time
 from jinja2 import Environment, FileSystemLoader
 
+import data_cleanup
+
 
 
 
@@ -456,7 +458,7 @@ def processAmazonBook(item, do_price):
             book.isbn = item.ISBN.string
             try:
                 book.isbn13 = convert_10_to_13(book.isbn)
-            except AssertionEFrror as e:
+            except AssertionError as e:
                 print("AssertionError in processAmazonBook {0}".format(e))
                 traceback.print_exc()
                 
@@ -558,7 +560,10 @@ def processAmazonBook(item, do_price):
         traceback.print_exc()
         print(item.prettify())
         return
-    return book
+    if not data_cleanup.shouldWeSaveThisBook(book):
+        book.delete()
+    else:
+        return book
 
 
 if __name__ == "__main__":

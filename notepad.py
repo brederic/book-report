@@ -445,27 +445,9 @@ def clean_book(book):
     book.save()
 
 
-def clean_books():
-    #Book.objects.all().update(ignore=False)
-    target_time = 2
-    # Get used price info
-    timeBefore = timezone.now()
-    books = Book.objects.exclude(high_sale_price_updated=True)[0:100]
-    elapsedTime = (timezone.now()-timeBefore).total_seconds()
-    if elapsedTime > target_time:
-        print('Process took '+ str(elapsedTime))
-        return
-    for book in books:
-        clean_book(book)
-        elapsedTime = (timezone.now()-timeBefore).total_seconds()
-        if elapsedTime > target_time:
-            print ("Time is up.")
-            break
-        else:
-            print("Elapsed Time " + str(elapsedTime))
-    sleepTime = max(0,target_time-elapsedTime)
-    print('Process took '+ str(elapsedTime) + '. Sleeping for ' + str(sleepTime))
-    time.sleep(sleepTime)
+def prepare_clean_books():
+    Book.objects.all().update(high_sale_price_updated=False)
+    
     
 def count_cleaned_books():
     books = Book.objects.all().filter(high_sale_price_updated=True)
@@ -503,6 +485,6 @@ def test_book_price():
 #repopulate_prices()
 #list_editions()
 #clean_book_by_asin('0321426770')
-#clean_books()
+prepare_clean_books()
 count_cleaned_books()
 #test_book_price()
