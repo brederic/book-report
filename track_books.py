@@ -81,8 +81,8 @@ def track_book_prices():
         elapsedTime = (timezone.now()-timeBefore).total_seconds()
         sleepTime = max(0,delay-elapsedTime)
         print('Process took '+ str(elapsedTime) + '. Sleeping for ' + str(sleepTime))
-        data_cleanup.clean_books(sleepTime)
-        #time.sleep(sleepTime)
+        #data_cleanup.clean_books(sleepTime)
+        time.sleep(sleepTime)
         # Get new price info
         timeBefore = timezone.now()
         result = amazon_services.get_book_price_info(asin_slice, 'New')
@@ -90,8 +90,8 @@ def track_book_prices():
         elapsedTime = (timezone.now()-timeBefore).total_seconds()
         sleepTime = max(0,delay-elapsedTime)
         print('Process took '+ str(elapsedTime) + '. Sleeping for ' + str(sleepTime))
-        data_cleanup.clean_books(sleepTime)
-        #time.sleep(sleepTime)
+        #.clean_books(sleepTime)
+        time.sleep(sleepTime)
         # Get sales rank info
         timeBefore = timezone.now()
         result = amazon_services.get_book_salesrank_info(asin_slice)
@@ -99,8 +99,8 @@ def track_book_prices():
         elapsedTime = (timezone.now()-timeBefore).total_seconds()
         sleepTime = max(0,delay-elapsedTime)
         print('Process took '+ str(elapsedTime) + '. Sleeping for ' + str(sleepTime))
-        data_cleanup.clean_books(sleepTime)
-        #time.sleep(sleepTime)
+        #data_cleanup.clean_books(sleepTime)
+        time.sleep(sleepTime)
         
     
         
@@ -399,6 +399,8 @@ def main(argv):
        track_book_prices()
    if (action == 'metadata-scan' ):
        track_book_metadata()
+   if (action == 'clean-books' ):
+       data_cleanup.clean_books()
 
    
    #print 'Input file is "', inputfile

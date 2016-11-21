@@ -80,6 +80,10 @@ def clean_book_by_asin(asin):
 # check reasons to keep a book from fastest to slowest
 def shouldWeSaveThisBook(book):
     reason = None
+    fail_rank = False
+    fail_price = False
+    max_rank = 0
+    max_price = 0
     while True:
         # has edition information
         if not book.current_edition == None:
@@ -91,21 +95,33 @@ def shouldWeSaveThisBook(book):
             reason = "Has inventory"
             break
         # if it has stayed above our target salesrank in the last year
+        max_rank = None
+        max_price = None
         max_rank = SalesRank.objects.all().filter(book=book, rank_date__gte=sales_rank_date).aggregate(max_sr=Max('rank'))['max_sr']
         print("Salesrank: " + str(max_rank))
         if not max_rank == None:
             if max_rank <= settings.worst_sales_rank:
                 reason = "Has good salesrank"
-                break
+            if max_rank > settings.worst_sales_rank*2:
+                fail_rank = True
         # if it has sold above our target price in the last year; either condition will do
         max_price = Price.objects.all().filter(book=book, price_date__gte=sales_rank_date).aggregate(max_price=Max('price'))['max_price']
         print("Price: " + str(max_price))
         if not max_price == None:
             if max_price >= settings.lowest_high_price:
                 reason = "Has good price"
-                break
+            if max_price < settings.lowest_high_price/2:
+                fail_price = True
         # done with testing
         break
+    if fail_rank or max_rank == None:
+        print ("Don't keep this book: really bad salesrank")
+        #raise ValueError("Don't keep this book: really bad salesrank")
+        return False
+    if fail_price or max_price == None:
+        print ("Don't keep this book: really bad price")
+        #raise ValueError("Don't keep this book: really bad price")
+        return False
     if not reason == None:
         print("Keep this book: "+reason)
         return True
@@ -116,9 +132,9 @@ def shouldWeSaveThisBook(book):
     
     
 def clean_book(book):
-    prices = Price.objects.all().filter(book=book, condition='5').order_by("-price_date")
-    print("New Price count: " + str(len(prices)))
-    clean_prices(prices)
+    #prices = Price.objects.all().filter(book=book, condition='5').order_by("-price_date")
+    #print("New Price count: " + str(len(prices)))
+    #clean_prices(prices)
     #prices = Price.objects.all().filter(book=book, condition='0').order_by("-price_date")
     #print("Used Price count: " + str(len(prices)))
     #clean_prices(prices)
@@ -155,6 +171,20 @@ def clean_books(target_time):
     sleepTime = max(0,target_time-elapsedTime)
     print('clean books took '+ str(elapsedTime) + '. Sleeping for ' + str(sleepTime))
     time.sleep(sleepTime)
+
+
+def clean_books():
+    while True:
+        books = Book.objects.exclude(high_sale_price_updated=True)[0:1000]
+        if len(books) == 0:
+            break
+        for book in books:
+            if not shouldWeSaveThisBook(book):
+                book.delete()
+            else:    
+                clean_book(book)
+            
+        
         
 if __name__ == "__main__":
     print('No Edition:')
