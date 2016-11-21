@@ -409,6 +409,8 @@ def main(argv):
 if __name__ == "__main__":
     #scanCamelBooks()
     main(sys.argv[1:])
+    print("Track books activity completed.")
+    exit
     print('No Edition, Good rank:')
     data_cleanup.clean_book_by_asin('0745684491')
     print('Has Edition:')

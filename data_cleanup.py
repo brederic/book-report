@@ -48,7 +48,32 @@ def clean_day_prices(prices):
     for price in prices:
         if not (price == max_price or price == min_price or price == max_sale_price):
             count += 1
-            price.delete()
+            try:
+                price.delete()
+            except Exception as e:
+                print("Error in clean_day_prices: " + str(e))
+                
+    #print (str(count) + " prices cleaned today")
+    return count
+
+
+def clean_day_ranks(ranks):
+    #print("Clean day ranks for " + str(ranks[0].rank_date.date()))
+    max_rank = ranks[0]
+    min_rank = ranks[0]
+    for rank in ranks:
+        if rank.rank > max_rank.rank:
+            max_price = rank
+        if rank.rank < min_rank.rank:
+            min_rank = rank
+    #print ("Min price " + str(min_price))
+    #print ("Max price " + str(max_price))
+
+    count = 0
+    for rank in ranks:
+        if not (rank == max_rank or rank == min_rank):
+            count += 1
+            rank.delete()
     #print (str(count) + " prices cleaned today")
     return count
 
@@ -72,6 +97,26 @@ def clean_prices(prices):
     count +=clean_day_prices(day_prices)
     print (str(count) +" prices cleaned for this book")
     
+def clean_ranks(ranks):
+    if len(ranks) == 0: return
+    # get 1 days worth of prices
+    day_ranks = []
+    current_day = None
+    count = 0
+    for rank in ranks:
+        if current_day == None:
+            current_day = rank.rank_date
+            day_ranks.append(rank)
+        else:
+            if rank.rank_date.date() == current_day.date():
+                day_ranks.append(rank)
+            else: #new day
+                count +=clean_day_ranks(day_ranks)
+                current_day = rank.rank_date
+                day_ranks = [rank]
+    count +=clean_day_ranks(day_ranks)
+    print (str(count) +" ranks cleaned for this book")
+    
 def clean_book_by_asin(asin):
     book = Book.objects.all().filter(asin=asin)[0]
     print("Book: " +str(book))
@@ -85,10 +130,13 @@ def shouldWeSaveThisBook(book):
     max_rank = 0
     max_price = 0
     while True:
-        # has edition information
-        if not book.current_edition == None:
-            reason = "Has edition information"
-            break
+        try:
+            # has edition information
+            if not book.current_edition == None:
+                reason = "Has edition information"
+                break
+        except:
+            return True
         # if we have ever bought this book
         inventory = InventoryBook.objects.all().filter(book=book)
         if len(inventory) > 0:
@@ -132,12 +180,15 @@ def shouldWeSaveThisBook(book):
     
     
 def clean_book(book):
-    #prices = Price.objects.all().filter(book=book, condition='5').order_by("-price_date")
-    #print("New Price count: " + str(len(prices)))
-    #clean_prices(prices)
-    #prices = Price.objects.all().filter(book=book, condition='0').order_by("-price_date")
-    #print("Used Price count: " + str(len(prices)))
-    #clean_prices(prices)
+    prices = Price.objects.all().filter(book=book, condition='5').order_by("-price_date")
+    print("New Price count: " + str(len(prices)))
+    clean_prices(prices)
+    prices = Price.objects.all().filter(book=book, condition='0').order_by("-price_date")
+    print("Used Price count: " + str(len(prices)))
+    clean_prices(prices)
+    ranks = SalesRank.objects.all().filter(book=book).order_by("-rank_date")
+    print("Sales Rank count: " + str(len(ranks)))
+    clean_ranks(ranks)
     book.high_sale_price_updated = True
     book.save()
 
