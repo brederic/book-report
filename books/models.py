@@ -118,7 +118,7 @@ class Book(models.Model):
     track = models.BooleanField(default=False, db_index=True)
     newReview = models.BooleanField(default=False, db_index=True)
     usedReview = models.BooleanField(default=False, db_index=True)
-    current_edition = models.ForeignKey('self', null=True, db_index=True)
+    current_edition = models.ForeignKey('self', null=True, db_index=True, on_delete=models.SET_NULL)
     previous_edition = models.BooleanField(default=False, db_index=True)
     
     def amazon_link(self):
@@ -284,6 +284,10 @@ class InventoryBook(models.Model):
         self.list_date = datetime.date.today()
         self.save()
         return True
+        
+    def delete(self, *args, **kwargs):
+        raise RuntimeError('InventoryBook should never be deleted!')
+
 
     def prepare_for_donating(self):
         settings = Settings.objects.all()[0]

@@ -411,15 +411,6 @@ if __name__ == "__main__":
     main(sys.argv[1:])
     print("Track books activity completed.")
     exit
-    print('No Edition, Good rank:')
-    data_cleanup.clean_book_by_asin('0745684491')
-    print('Has Edition:')
-    data_cleanup.clean_book_by_asin('0397547838')
-    print('Has Inventory:')
-    data_cleanup.clean_book_by_asin('0786911751')
-    print('No Salesrank or Price:')
-    data_cleanup.clean_book_by_asin('0781793483')
-    print('?:')
-    data_cleanup.clean_book_by_asin('0471191124')
-    
+    print('Inventory')
+    data_cleanup.clean_book_by_asin('1118358538')
     

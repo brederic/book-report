@@ -118,9 +118,14 @@ def clean_ranks(ranks):
     print (str(count) +" ranks cleaned for this book")
     
 def clean_book_by_asin(asin):
-    book = Book.objects.all().filter(asin=asin)[0]
+    books = Book.objects.all().filter(asin=asin)
+    print(str(len(books)))
+    book = books[0]
     print("Book: " +str(book))
-    clean_book(book)                
+    shouldWeSaveThisBook(book)
+    clean_book(book)   
+
+                 
 
 # check reasons to keep a book from fastest to slowest
 def shouldWeSaveThisBook(book):
@@ -134,6 +139,10 @@ def shouldWeSaveThisBook(book):
             # has edition information
             if not book.current_edition == None:
                 reason = "Has edition information"
+                break
+            # another book references this edition
+            if len(Book.objects.filter(current_edition=book)) > 0:
+                reason = "Another book refers to this edition"
                 break
         except:
             return True
@@ -180,15 +189,15 @@ def shouldWeSaveThisBook(book):
     
     
 def clean_book(book):
-    prices = Price.objects.all().filter(book=book, condition='5').order_by("-price_date")
-    print("New Price count: " + str(len(prices)))
-    clean_prices(prices)
-    prices = Price.objects.all().filter(book=book, condition='0').order_by("-price_date")
-    print("Used Price count: " + str(len(prices)))
-    clean_prices(prices)
-    ranks = SalesRank.objects.all().filter(book=book).order_by("-rank_date")
-    print("Sales Rank count: " + str(len(ranks)))
-    clean_ranks(ranks)
+    #prices = Price.objects.all().filter(book=book, condition='5').order_by("-price_date")
+    #print("New Price count: " + str(len(prices)))
+    #clean_prices(prices)
+    #prices = Price.objects.all().filter(book=book, condition='0').order_by("-price_date")
+    #print("Used Price count: " + str(len(prices)))
+    #clean_prices(prices)
+    #ranks = SalesRank.objects.all().filter(book=book).order_by("-rank_date")
+    #print("Sales Rank count: " + str(len(ranks)))
+    #clean_ranks(ranks)
     book.high_sale_price_updated = True
     book.save()
 
@@ -230,10 +239,15 @@ def clean_books():
         if len(books) == 0:
             break
         for book in books:
-            if not shouldWeSaveThisBook(book):
-                book.delete()
-            else:    
-                clean_book(book)
+            try:
+                if not shouldWeSaveThisBook(book):
+                    #print('book.delete()')
+                    book.delete()
+                else:    
+                    clean_book(book)
+            except Exception as e:
+                print(str(e))
+                continue
             
         
         
