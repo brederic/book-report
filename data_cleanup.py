@@ -189,15 +189,15 @@ def shouldWeSaveThisBook(book):
     
     
 def clean_book(book):
-    #prices = Price.objects.all().filter(book=book, condition='5').order_by("-price_date")
-    #print("New Price count: " + str(len(prices)))
-    #clean_prices(prices)
-    #prices = Price.objects.all().filter(book=book, condition='0').order_by("-price_date")
-    #print("Used Price count: " + str(len(prices)))
-    #clean_prices(prices)
-    #ranks = SalesRank.objects.all().filter(book=book).order_by("-rank_date")
-    #print("Sales Rank count: " + str(len(ranks)))
-    #clean_ranks(ranks)
+    prices = Price.objects.all().filter(book=book, condition='5').order_by("-price_date")
+    print("New Price count: " + str(len(prices)))
+    clean_prices(prices)
+    prices = Price.objects.all().filter(book=book, condition='0').order_by("-price_date")
+    print("Used Price count: " + str(len(prices)))
+    clean_prices(prices)
+    ranks = SalesRank.objects.all().filter(book=book).order_by("-rank_date")
+    print("Sales Rank count: " + str(len(ranks)))
+    clean_ranks(ranks)
     book.high_sale_price_updated = True
     book.save()
 
