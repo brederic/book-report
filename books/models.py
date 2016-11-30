@@ -109,6 +109,8 @@ class Book(models.Model):
     binding = models.CharField(max_length=15, blank=True)
     author = models.CharField(max_length=50, blank=True)
     imageLink = models.CharField(max_length=100, blank=True)
+    mediumImageLink = models.CharField(max_length=100, blank=True)
+    largeImageLink = models.CharField(max_length=100, blank=True)
     edition = models.CharField(max_length=30, blank=True)
     publicationDate = models.DateField(null=True, blank=True)
     watch = models.BooleanField(default=False, db_index=True)
@@ -120,6 +122,9 @@ class Book(models.Model):
     usedReview = models.BooleanField(default=False, db_index=True)
     current_edition = models.ForeignKey('self', null=True, db_index=True, on_delete=models.SET_NULL)
     previous_edition = models.BooleanField(default=False, db_index=True)
+    description = models.TextField(blank=True)
+    page_count = models.IntegerField(null=True)
+    
     
     def amazon_link(self):
       return '<a href="http://smile.amazon.com/dp/%s" target="_blank">Buy on Amazon</a>' %   escape(self.asin) 

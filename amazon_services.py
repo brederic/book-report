@@ -478,14 +478,27 @@ def processAmazonBook(item, do_price):
                 book.author = item.Creator.string
         if (item.SmallImage):
             book.imageLink = item.SmallImage.URL.string
+        if (item.MediumImage):
+            book.mediumImageLink = item.MediumImage.URL.string
+        if (item.LargeImage):
+            book.largeImageLink = item.LargeImage.URL.string
+        if (item.EditorialReviews):
+            for review in item.EditorialReviews.find_all('EditorialReview'):
+                if review.Source.string == 'Product Description':
+                    book.description = review.Content.string
         if (item.Binding):
             book.binding = item.Binding.string
         if (item.Edition):
             book.edition = item.Edition.string
+        if item.NumberOfPages:
+            book.page_count = item.NumberOfPages.string
+        else:
+            print("No NumberOfPages")
         if (item.RelatedItem):
             asin = item.RelatedItem.Item.ASIN.string
             print('find related item with asin: ' + asin)
             try:
+
                 current_edition = Book.objects.get(asin=asin)
             except (Book.DoesNotExist):
                 print('create new book record')
@@ -520,6 +533,8 @@ def processAmazonBook(item, do_price):
             salesRank.rank = item.SalesRank.string
             salesRank.rank_date = timezone.now()
             salesRank.save()
+
+        
         if item.OfferSummary:
             if (item.OfferSummary.LowestNewPrice):
                 if (item.OfferSummary.LowestNewPrice.Amount):
@@ -576,7 +591,16 @@ if __name__ == "__main__":
     # scanCamelBooks()
     print(access_key)
     #get_book_infoMWS(['0312157584'])
-    get_book_info('0205891500')
+    asin = '0205891500'
+    get_book_info(asin)
+    book = Book.objects.filter(asin= asin)[0]
+    print(str(book))
+    print(book.mediumImageLink)
+    print(book.largeImageLink)
+    print(book.description)
+    print(str(book.page_count))
+    
+    
 
 # reportid = '627535437016739' #replace with report id
 
