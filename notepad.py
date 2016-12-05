@@ -445,17 +445,17 @@ def clean_book(book):
     book.save()
 
 
-def prepare_clean_books():
-    Book.objects.all().update(high_sale_price_updated=False)
+def prepare_clean_books(db):
+    Book.objects.using(db).all().update(high_sale_price_updated=False)
     
     
-def count_cleaned_books():
-    books = Book.objects.all().filter(high_sale_price_updated=True)
+def count_cleaned_books(db):
+    books = Book.objects.using(db).all().filter(high_sale_price_updated=True)
     print ("Processed " +str(len(books)))
-    books = Book.objects.all().values('asin').filter(high_sale_price_updated=False)
+    books = Book.objects.using(db).all().values('asin').filter(high_sale_price_updated=False)
     
     print ("Unprocessed " +str(len(books)))
-    books = Book.objects.all().values('asin')
+    books = Book.objects.using(db).all().values('asin')
     
     print ("All " +str(len(books)))
     
@@ -485,6 +485,6 @@ def test_book_price():
 #repopulate_prices()
 #list_editions()
 #clean_book_by_asin('0321426770')
-#prepare_clean_books()
-count_cleaned_books()
+#prepare_clean_books('old')
+count_cleaned_books('old')
 #test_book_price()

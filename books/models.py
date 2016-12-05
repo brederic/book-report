@@ -98,7 +98,9 @@ class Settings(models.Model):
     review_item_count = models.IntegerField(default=8)
     # lowest total buy score to mark for review
     review_buy_score_floor = models.DecimalField(max_digits=4, decimal_places=2, default='0.75')
-    
+    # this is the datetime of the most recent run of the reconcile script
+    last_reconcile_run = models.DateTimeField(null=True, default='2015-07-15')
+
     
 
 class Book(models.Model):
@@ -238,7 +240,7 @@ class InventoryBook(models.Model):
     ('LOW', 'Chase Lowest Price'),
     ('HHI', 'Hold High'),
     )
-    book = models.ForeignKey(Book, db_index=True)
+    book = models.ForeignKey(Book, db_index=True,blank=True, null=True)
     source = models.CharField(max_length=3, choices=SOURCE_CHOICES,db_index=True)
     status = models.CharField(max_length=2, choices=STATUS_CHOICES,db_index=True, default='RQ')
     #inventory = models.IntegerField(blank=True, default=1)
@@ -310,7 +312,7 @@ class InventoryBook(models.Model):
         return self.book.title + ' [' + self.source + ']'   
 
 class Price(models.Model):
-    book = models.ForeignKey(Book, db_index=True)
+    book = models.ForeignKey(Book, db_index=True, blank=True, null=True)
     price_date = models.DateTimeField( db_index=True) 
     condition = models.CharField(max_length=1, choices=CONDITION_CHOICES,db_index=True)
     price = models.DecimalField(max_digits=11, decimal_places=2, db_index=True)
@@ -353,14 +355,16 @@ class Price(models.Model):
                 prev.save()
                 if prev.price >= settings.lowest_high_price:
                     # check to see if this is new high price sold
-                    score = self.book.get_bookscore()
-                    score.check_sold_price(prev)
+                    if self.book:
+                        score = self.book.get_bookscore()
+                        score.check_sold_price(prev)
                     
                     
         # check if price is low enough to review for purchase
-        score = self.book.get_bookscore()
-        score.update_current_price(self)
-          
+        if self.book:
+            score = self.book.get_bookscore()
+            score.update_current_price(self)
+              
                     
 
 
@@ -368,12 +372,12 @@ class Price(models.Model):
         return self.book.title + ' [$' + str(self.price) + ' ' + self.condition +' ' + self.price_date.strftime('%x')+ " $"+ str(self.good_price)+']'  
             
 class SalesRank(models.Model):
-    book = models.ForeignKey(Book, db_index=True)
+    book = models.ForeignKey(Book, db_index=True, blank=True, null=True)
     rank_date = models.DateTimeField(db_index=True) 
     rank = models.IntegerField(db_index=True)
     most_recent = models.BooleanField(default=False)
     def __str__(self):             
-        return self.book.title + ' [' + str(self.rank) + ']'  
+        return self.book.title + ' [' + str(self.pk) + ", " +str(self.rank) + ", " + str(self.rank_date)+']'  
     class Meta:
         index_together = [['rank_date', 'rank', 'book']]
     

@@ -15,3 +15,5 @@ python -u track_books.py -a chase-lowest-price  >> price.log 2>&1 &
 
 python -u track_orders.py  >> orders.log 2>&1 &
 
+python -u reconcile.py  >> reconcile.log 2>&1 &
+
