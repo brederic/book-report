@@ -83,6 +83,14 @@ DATABASES = {
         'PASSWORD': 'b00k5!b00k5!',
         'HOST': 'localhost',
         'PORT': '',
+    },
+    'old': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'brent_books',
+        'USER': 'brent_bookuser',
+        'PASSWORD': 'b00k5!b00k5!',
+        'HOST': 'daldb.vpsdime.com',
+        'PORT': '',
     }
 }
 

@@ -25,6 +25,47 @@ def index(request):
     })
     return render(request, 'books/index.html', context)
     
+def compare(request, book_id):
+    book = get_object_or_404(Book, pk=book_id)
+    
+    current_book = book.current_edition
+    previous_book = None
+    previous_price=None
+    previous_price_used=None
+    related_books = Book.objects.filter(current_edition=current_book)
+    for book in related_books:
+        if book.is_previous_edition():
+            previous_book = book
+    current_price = Price.objects.filter(condition='5', book=current_book).order_by('-price_date')
+    if len(current_price) > 0:
+        current_price=current_price[0]
+    else:
+        current_price=None
+        
+    current_price_used = Price.objects.filter(condition='0', book=current_book).order_by('-price_date')
+    if len(current_price_used) > 0:
+        current_price_used=current_price_used[0]
+    else:
+        current_price_used=None
+
+    if previous_book:
+        previous_price_used = Price.objects.filter(condition='0', book=previous_book).order_by('-price_date')
+        if len(previous_price_used) > 0:
+            previous_price_used=previous_price_used[0]
+        previous_price = Price.objects.filter(condition='5', book=previous_book).order_by('-price_date')
+        if len(previous_price) > 0:
+            previous_price=previous_price[0]
+        
+    context = RequestContext(request, {
+        'current_book': current_book,
+        'previous_book': previous_book,
+        'current_price': current_price,
+        'previous_price': previous_price,
+        'current_price_used': current_price_used,
+        'previous_price_used': previous_price_used,
+    })
+    return render(request, 'books/compare.html', context)
+    
 def getPrevAndNext(group, item):
     foundit = False
     prev = item

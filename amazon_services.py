@@ -450,7 +450,8 @@ def processAmazonBook(item, do_price):
         book = Book()
     try:
         book.asin = item.ASIN.string
-        book.publicationDate = item.PublicationDate.string
+        if item.publicationDate:
+            book.publicationDate = item.PublicationDate.string
         book.save()
     except (django.core.exceptions.ValidationError):
         try:

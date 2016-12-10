@@ -379,6 +379,18 @@ def list_editions():
             print(book.asin + ';'+str(book.new_edition_date())+';'+ str(book.is_current_edition())+';'+str(book.is_previous_edition()))
         else:
             print(book.asin + ';;'+ str(book.is_current_edition())+';' + str(book.is_previous_edition()))
+        
+def list_descriptions():
+    books = Book.objects.exclude(description="")
+    print("Books with descriptions: " + str(len(books)))
+    books = Book.objects.exclude(mediumImageLink="")
+    print("Books with medium images: " + str(len(books)))
+    books = Book.objects.exclude(largeImageLink="")
+    print("Books with large images: " + str(len(books)))
+    books = Book.objects.exclude(page_count=None)
+    print("Books with page count: " + str(len(books)))
+
+    
 
 
 def clean_day_prices(prices):
@@ -450,9 +462,11 @@ def prepare_clean_books(db):
     
     
 def count_cleaned_books(db):
-    books = Book.objects.using(db).all().filter(high_sale_price_updated=True)
+    books = Book.objects.using(db).all().filter(track=True)
+    print ("Tracked " +str(len(books)))
+    books = Book.objects.using(db).all().filter(high_sale_price_updated=True,track=True)
     print ("Processed " +str(len(books)))
-    books = Book.objects.using(db).all().values('asin').filter(high_sale_price_updated=False)
+    books = Book.objects.using(db).all().values('asin').filter(high_sale_price_updated=False,track=True)
     
     print ("Unprocessed " +str(len(books)))
     books = Book.objects.using(db).all().values('asin')
@@ -488,3 +502,4 @@ def test_book_price():
 #prepare_clean_books('old')
 count_cleaned_books('old')
 #test_book_price()
+#list_descriptions()

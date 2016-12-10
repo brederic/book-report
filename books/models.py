@@ -139,6 +139,8 @@ class Book(models.Model):
         self.previous_edition = False
         self.save()
         if self.current_edition:
+            if not self.current_edition.publicationDate or not self.publicationDate:
+                return None            
             if self.current_edition.publicationDate > self.publicationDate:
                 # there is a new edition, see if any other editions come between us and it
                 books = Book.objects.filter(current_edition=self.current_edition).order_by('-publicationDate')
@@ -177,9 +179,10 @@ class Book(models.Model):
         
     def is_current_edition (self):
         if self.current_edition:
-            if self.current_edition.publicationDate <= self.publicationDate:
-                # there is a new edition
-                return True
+            if self.current_edition.publicationDate and self.publicationDate:
+                if self.current_edition.publicationDate <= self.publicationDate:
+                    # there is a new edition
+                    return True
         
         return False
         
@@ -486,7 +489,7 @@ class BookScore(models.Model):
                 msg += 'Camel: http://camelcamelcamel.com/product/'+ self.book.asin + '\n'
                 msg += 'Book Report: http://107.155.87.176:8000/admin/books/book/'+ str(self.book.id) + '\n'
                 msg += 'Price alert New: ' + str(newTarget) + ' Used: ' + str(usedTarget)
-                mail.sendEmail('Check out this book', msg)
+                mail.send_check_book('Check out this book: ' + self.book.title, msg)
             else:
                 print('no')
                 

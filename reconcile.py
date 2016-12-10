@@ -114,7 +114,7 @@ def reconcile_ibs(old_book, new_book):
         transfers = old_ibs
     print("Transfers: " + str(len(transfers)) + "  " + str(len(new_ibs)))
     for transfer in transfers:
-        raise AssertionError(old_book.asin)
+        #raise AssertionError(old_book.asin)
         transfer.pk = None # clear id so it can get new
         transfer.book = None #link it to the book in the new db
         transfer.save(using='default')
@@ -342,7 +342,7 @@ def reconcile_books():
         print ("Reconciliation in progress. Do not restart it.")
         return
     while True:
-        books = Book.objects.using('old').exclude(high_sale_price_updated=True)[0:1000]
+        books = Book.objects.using('old').filter(high_sale_price_updated=False,track=True)[0:1000]
         if len(books) == 0:
             break
         for book in books:
@@ -369,4 +369,4 @@ if __name__ == "__main__":
 
     #print('No Edition:')
     reconcile_books()
-    #reconcile_book_by_asin('1137414499')
+    #reconcile_book_by_asin('0077861027')

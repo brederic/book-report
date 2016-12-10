@@ -69,14 +69,17 @@ class BookAdmin(admin.ModelAdmin):
 admin.site.register(Book, BookAdmin)
 class InventoryBookAdmin(admin.ModelAdmin):
     actions = ['list_books', 'hold_high', 'chase_lowest_price', 'thirty_day_drop', 'donate']
-    def get_high_sale_date(self, obj):
-        #return obj.bookscore__score
-        score = obj.book.get_bookscore().getPriceScore(obj.list_condition)
-        if score and score.highest_sold_price:
-            return score.highest_sold_price.price_date
-        return None
-    get_high_sale_date.admin_order_field = 'book__bookscore__pricescore__highest_sold_price__price_date'
-    get_high_sale_date.short_description = 'Peak Date'
+    search_fields = ['book__asin', 'book__title', 'book__isbn', 'id']
+
+
+    #def get_high_sale_date(self, obj):
+    #    #return obj.bookscore__score
+    #    score = obj.book.get_bookscore().getPriceScore(obj.list_condition)
+    #    if score and score.highest_sold_price:
+    #        return score.highest_sold_price.price_date
+    #    return None
+    #get_high_sale_date.admin_order_field = 'book__bookscore__pricescore__highest_sold_price__price_date'
+    #get_high_sale_date.short_description = 'Peak Date'
 
     def list_books(self, request, queryset):
         errors = ''
@@ -179,7 +182,7 @@ class InventoryBookAdmin(admin.ModelAdmin):
         ('Sell', {'fields': ['sale_date', 'last_ask_price', 'sale_price'], 
         'classes': ['collapse']}),
     ]
-    list_display = ('book', 'purchase_condition', 'list_condition', 'status', 'listing_strategy', 'get_high_sale_date', 'request_date', 'list_date')
+    list_display = ('book', 'purchase_condition', 'list_condition', 'status', 'listing_strategy',  'request_date', 'list_date')
     list_filter = ['status', 'listing_strategy', 'source']
     readonly_fields = ['book_link']
     

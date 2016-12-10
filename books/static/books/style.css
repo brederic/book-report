@@ -5,3 +5,16 @@ li{ margin-bottom:10px }
 li a {
     color: green;
 }
+main {
+  float: left;
+  margin: 0 1.5%;
+  width: 47%;
+}
+aside {
+  float: right;
+  margin: 0 1.5%;
+  width: 47%;
+}
+img {
+    height: 300px;
+    }

@@ -131,13 +131,13 @@ def track_book_metadata():
     # set their track flag and clear their review flags
     #scored_books.update(track=True, newReview = False, usedReview = False)
     # get a list of asins for the books we want to track
-    tracked_asins = list(Book.objects.exclude(current_edition=None).distinct().values_list('asin', flat=True))
+    tracked_asins = list(Book.objects.filter(page_count=None).values_list('asin', flat=True))
     
     total = len(tracked_asins)
     print ('track count: ' + str(total))
     
     # throttle our requests 
-    delay = 2.05 #s
+    delay = 3.05 #s
     # get price info for 10 books at a time
     for page in range(0, int(math.ceil(total/10))):
       try:

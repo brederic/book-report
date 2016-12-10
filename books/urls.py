@@ -15,4 +15,6 @@ urlpatterns = [
     url(r'^(?P<book_id>[0-9]+)/list/$', views.list_book, name='list'),
     url(r'^charts/(?P<book_id>[0-9]+).png$', views.simple_chart, name='chart'),
     url(r'^charts/review/(?P<book_id>[0-9]+)-(?P<condition>[0-9]).png$', views.book_chart, name='book-chart'),
+    url(r'^(?P<book_id>[0-9]+)/compare/$', views.compare, name='compare'),
+
 ]
