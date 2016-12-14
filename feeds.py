@@ -57,7 +57,7 @@ def send_price_drop_feed():
         print(str(book) + 'newPrice: ' + str(newPrice))
         book.last_ask_price = newPrice
         book.save()
-        message = amazon_services.PriceMessage(book.sku, form.format(newPrice))
+        message = amazon_services.PriceMessage(book.sku, form.format(newPrice), form.format(book.original_ask_price))
         feed_messages.append(message)
         
     feed_xml = amazon_services.generateFeedContent(amazon.PRICE_FEED, feed_messages)

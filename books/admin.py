@@ -69,7 +69,7 @@ class BookAdmin(admin.ModelAdmin):
 admin.site.register(Book, BookAdmin)
 class InventoryBookAdmin(admin.ModelAdmin):
     actions = ['list_books', 'hold_high', 'chase_lowest_price', 'thirty_day_drop', 'donate']
-    search_fields = ['book__asin', 'book__title', 'book__isbn', 'id']
+    search_fields = [ 'book__title',  'id']
 
 
     #def get_high_sale_date(self, obj):
