@@ -1,6 +1,26 @@
 {% load staticfiles %}
 
 <link rel="stylesheet" type="text/css" href="{% static 'polls/style.css' %}" />
+<form method="get" action="search">
+          
+
+<label for="id_q">Search:</label>
+           <input type="text" name="q" id="id_q"/>
+           <input type="submit" value="Submit"/>
+
+
+        </form>
+
+       
+
+You searched for "{{ query_string }}" and the results are listed below.
+    <ul>
+    {% for book in found_entries %}
+        <li><a href="{% url 'books:compare' book.id %}">{{ book.title }}</a></li>
+    {% endfor %}
+    </ul>
+
+     
 <h2>Listed Books</h2>
 {% if listed_book_list %}
     <ul>

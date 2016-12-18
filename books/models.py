@@ -181,7 +181,7 @@ class Book(models.Model):
         if self.current_edition:
             if self.current_edition.publicationDate and self.publicationDate:
                 if self.current_edition.publicationDate <= self.publicationDate:
-                    # there is a new edition
+                    # this is the current edition
                     return True
         
         return False

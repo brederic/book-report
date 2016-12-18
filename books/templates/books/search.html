@@ -1,0 +1,17 @@
+{% load staticfiles %}
+<form method="get" action="/search/">
+          
+
+<label for="id_q">Search:</label>
+           <input type="text" name="q" id="id_q" value="{{ query_string }}"/>
+           <input type="submit" value="Submit"/>
+
+
+        </form>
+
+       
+
+You searched for "{{ query_string }}" and the results are listed below.
+
+
+           <li> {{ found_entries }}}</li>

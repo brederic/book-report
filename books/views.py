@@ -2,13 +2,14 @@ from django.http import HttpResponse
 from django.template import RequestContext, loader
 from django.shortcuts import get_object_or_404, render
 from django.db.models import Q, Max, Count, F
-
+import search
 
 from .models import Book, InventoryBook, Price, BookScore, SalesRank
 
 from .charts import simple, book_image
 
 review_strategy='HHI'
+
 
 def index(request):
     listed_book_list = InventoryBook.objects.filter(       \
@@ -24,18 +25,72 @@ def index(request):
         'listed_book_list': listed_book_list
     })
     return render(request, 'books/index.html', context)
+import re
+
+from django.db.models import Q
+
+def normalize_query(query_string,
+                    findterms=re.compile(r'"([^"]+)"|(\S+)').findall,
+                    normspace=re.compile(r'\s{2,}').sub):
+    ''' Splits the query string in invidual keywords, getting rid of unecessary spaces
+        and grouping quoted words together.
+        Example:
+        
+        >>> normalize_query('  some random  words "with   quotes  " and   spaces')
+        ['some', 'random', 'words', 'with quotes', 'and', 'spaces']
+    
+    '''
+    return [normspace(' ', (t[0] or t[1]).strip()) for t in findterms(query_string)] 
+
+def get_query(query_string, search_fields):
+    ''' Returns a query, that is a combination of Q objects. That combination
+        aims to search keywords within a model by testing the given search fields.
+    
+    '''
+    query = None # Query to search for every search term        
+    terms = normalize_query(query_string)
+    for term in terms:
+        or_query = None # Query to search for a given term in each field
+        for field_name in search_fields:
+            q = Q(**{"%s__icontains" % field_name: term})
+            if or_query is None:
+                or_query = q
+            else:
+                or_query = or_query | q
+        if query is None:
+            query = or_query
+        else:
+            query = query & or_query
+    return query
+
+def search(request):
+    query_string = ''
+    found_entries = None
+    if ('q' in request.GET) and request.GET['q'].strip():
+        query_string = request.GET['q']
+        
+        entry_query = get_query(query_string, ['title', 'author','isbn', 'isbn13'])
+        
+        found_entries = Book.objects.filter(track=True).filter(entry_query).order_by('-publicationDate')
+
+    return render(request, 'books/index.html',
+                          { 'query_string': query_string, 'found_entries': found_entries },
+                          context_instance=RequestContext(request))
     
 def compare(request, book_id):
     book = get_object_or_404(Book, pk=book_id)
-    
-    current_book = book.current_edition
+    if not book.is_current_edition():
+        current_book = book.current_edition
+    else:
+        current_book = book
     previous_book = None
     previous_price=None
     previous_price_used=None
-    related_books = Book.objects.filter(current_edition=current_book)
+    related_books = Book.objects.filter(current_edition=current_book).order_by('-publicationDate')
     for book in related_books:
-        if book.is_previous_edition():
+        if not book.is_current_edition():
             previous_book = book
+            break
     current_price = Price.objects.filter(condition='5', book=current_book).order_by('-price_date')
     if len(current_price) > 0:
         current_price=current_price[0]

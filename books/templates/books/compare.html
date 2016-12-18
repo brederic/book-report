@@ -7,7 +7,17 @@
     <section>
         <a href="http://amazon.com/dp/{{current_book.asin}}"><h1>Current Edition - ${{ current_price.price }}</h1></a>
         <figure>
-          <a href="http://amazon.com/dp/{{current_book.asin}}"><img src="{{ current_book.largeImageLink }}" alt="{{ current_book.title }}" ></a>
+          <a href="http://amazon.com/dp/{{current_book.asin}}"><img src="
+            {% if current_book.largeImageLink %}
+                {{ current_book.largeImageLink }}
+            {% else %}
+                {% if current_book.mediumImageLink  %}
+                    {{ current_book.mediumImageLink }}
+                {% else %}
+                     {{ current_book.imageLink }}
+                {% endif %}
+            {% endif %}
+            " alt="{{ current_book.title }}" ></a>
           <figcaption>{{ current_book.title }} (Edition: {{current_book.edition}})</figcaption>
         </figure> 
         <div><a href="http://amazon.com/dp/{{current_book.asin}}">View on Amazon</a></div>
