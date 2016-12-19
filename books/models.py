@@ -119,6 +119,7 @@ class Book(models.Model):
     ignore = models.BooleanField(default=False, db_index=True)
     speculative = models.BooleanField(default=False, db_index=True)
     high_sale_price_updated = models.BooleanField(default=False, db_index=True)
+    process_now = models.BooleanField(default=False, db_index=True)
     track = models.BooleanField(default=False, db_index=True)
     newReview = models.BooleanField(default=False, db_index=True)
     usedReview = models.BooleanField(default=False, db_index=True)

@@ -16,6 +16,7 @@ urlpatterns = [
     url(r'^charts/(?P<book_id>[0-9]+).png$', views.simple_chart, name='chart'),
     url(r'^charts/review/(?P<book_id>[0-9]+)-(?P<condition>[0-9]).png$', views.book_chart, name='book-chart'),
     url(r'^(?P<book_id>[0-9]+)/compare/$', views.compare, name='compare'),
+    url(r'^(?P<book_id>[0-9]+)/update/$', views.update, name='update'),
     url(r'^search$', views.search, name='search'),
 
 ]

@@ -1,7 +1,8 @@
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.template import RequestContext, loader
 from django.shortcuts import get_object_or_404, render
 from django.db.models import Q, Max, Count, F
+from django.core.urlresolvers import reverse
 import search
 
 from .models import Book, InventoryBook, Price, BookScore, SalesRank
@@ -157,6 +158,21 @@ def detail(request, book_id):
 
 
     return render(request, 'books/detail.html', {'book': book, 'score': score, 'price_score': price_score, 'price': price, 'rank': rank, 'prev': prev, 'next': nxt})
+
+ 
+    
+def update(request, book_id):
+    book = get_object_or_404(Book, pk=book_id)
+    #print(str(book.process_now))
+    if not book.process_now:
+        book.process_now=True
+        book.save()
+    #book.refresh_from_db()
+    #print(str(book.process_now))
+   
+    
+
+    return HttpResponseRedirect(reverse('books:compare',args=(book.pk,)))
 
     
 def new_review(request, book_id):

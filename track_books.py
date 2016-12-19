@@ -64,15 +64,44 @@ def track_book_prices():
     total = len(tracked_asins)
     print ('track count: ' + str(total))
     
-    # throttle our requests 
-    delay = 2.05 #s
     # get price info for 10 books at a time
     for page in range(0, int(math.ceil(total/10))):
-      try:
+        check_process_now()
         asin_slice = tracked_asins[page*10:min(total, page*10+10)]
         if len(asin_slice) == 0: 
             print(time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()) + str(asin_slice))
             continue
+        process_asin_slice(asin_slice)
+
+    print('Track Books End Time: ' + time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()))
+    send_email()
+
+def check_process_now():
+    # get a list of asins for the books we want to track
+    tracked_asins = list(Book.objects.filter(process_now=True).distinct().values_list('asin', flat=True))
+    #tracked_asins = list(Book.objects.filter(asin='1405182407').distinct().values_list('asin', flat=True))
+    
+    total = len(tracked_asins)
+    #if total == 0:
+    #    return
+    print ('process_now: ' + str(total))
+    
+    # get price info for 10 books at a time
+    for page in range(0, int(math.ceil(total/10))):
+        asin_slice = tracked_asins[page*10:min(total, page*10+10)]
+        if len(asin_slice) == 0: 
+            print("Finished with process_now")
+            return
+        process_asin_slice(asin_slice)   
+        #clear process_now  flag 
+        books  = Book.objects.filter(asin__in=asin_slice)
+        books.update(process_now=False)
+        
+        
+def process_asin_slice(asin_slice):
+    # throttle our requests 
+    delay = 2.05 #s
+    try:
         # Get used price info
         timeBefore = timezone.now()
         result = amazon_services.get_book_price_info(asin_slice, 'Used')
@@ -104,13 +133,11 @@ def track_book_prices():
         
     
         
-      except:
+    except:
         print("Unknown Error in track_book_prices {0}".format(sys.exc_info()[0]))
         traceback.print_exc()
         print (asin_slice)
         time.sleep(120)
-    print('Track Books End Time: ' + time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()))
-    send_email()
 
 def track_book_metadata():
     
