@@ -9,21 +9,31 @@ from .models import Book, InventoryBook, Price, BookScore, SalesRank
 
 from .charts import simple, book_image
 
-review_strategy='HHI'
+review_strategy='ALL'
+
+review_strategy='LOW'
 
 
 def index(request):
-    listed_book_list = InventoryBook.objects.filter(       \
-        (Q(book__bookscore__pricescore__condition=F('list_condition')) | \
-        Q(book__bookscore__pricescore__condition='0') & ~Q(list_condition='5')))\
-        .filter(status='LT', listing_strategy=review_strategy) \
-        .order_by('-book__bookscore__pricescore__current_price_score')
+    if review_strategy == 'ALL':
+        listed_book_list = InventoryBook.objects.filter(       \
+            (Q(book__bookscore__pricescore__condition=F('list_condition')) | \
+            Q(book__bookscore__pricescore__condition='0') & ~Q(list_condition='5')))\
+            .filter(status='LT') \
+            .order_by('-book__bookscore__pricescore__current_price_score')
+    else:
+        listed_book_list = InventoryBook.objects.filter(       \
+            (Q(book__bookscore__pricescore__condition=F('list_condition')) | \
+            Q(book__bookscore__pricescore__condition='0') & ~Q(list_condition='5')))\
+            .filter(status='LT', listing_strategy=review_strategy) \
+            .order_by('-book__bookscore__pricescore__current_price_score')
     new_review_list = Book.objects.filter(newReview=True)
     used_review_list = Book.objects.filter(usedReview=True)
     context = RequestContext(request, {
         'new_review_list': new_review_list,
         'used_review_list': used_review_list,
-        'listed_book_list': listed_book_list
+        'listed_book_list': listed_book_list,
+        'review_strategy': review_strategy
     })
     return render(request, 'books/index.html', context)
 import re
@@ -147,12 +157,18 @@ def detail(request, book_id):
     price_score  = score.getPriceScore(condition)
     price = Price.objects.filter(book=book.book, condition=condition).latest('price_date')
     rank = SalesRank.objects.filter(book=book.book).latest('rank_date')
-    
-    listed_book_list = InventoryBook.objects.filter(       \
-        (Q(book__bookscore__pricescore__condition=F('list_condition')) | \
-        Q(book__bookscore__pricescore__condition='0') & ~Q(list_condition='5')))\
-        .filter(status='LT', listing_strategy=review_strategy) \
-        .order_by('-book__bookscore__pricescore__current_price_score')
+    if review_strategy == 'ALL':
+        listed_book_list = InventoryBook.objects.filter(       \
+            (Q(book__bookscore__pricescore__condition=F('list_condition')) | \
+            Q(book__bookscore__pricescore__condition='0') & ~Q(list_condition='5')))\
+            .filter(status='LT') \
+            .order_by('-book__bookscore__pricescore__current_price_score')
+    else:
+        listed_book_list = InventoryBook.objects.filter(       \
+            (Q(book__bookscore__pricescore__condition=F('list_condition')) | \
+            Q(book__bookscore__pricescore__condition='0') & ~Q(list_condition='5')))\
+            .filter(status='LT',listing_strategy=review_strategy) \
+            .order_by('-book__bookscore__pricescore__current_price_score')
     prev, nxt = getPrevAndNext(listed_book_list, book)
     
 

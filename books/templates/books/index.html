@@ -21,7 +21,7 @@ You searched for "{{ query_string }}" and the results are listed below.
     </ul>
 
      
-<h2>Listed Books</h2>
+<h2>Listed Books - {{review_strategy}} - {{listed_book_list|length}}</h2>
 {% if listed_book_list %}
     <ul>
     {% for book in listed_book_list %}

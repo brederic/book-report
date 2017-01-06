@@ -2,7 +2,7 @@
 
 <link rel="stylesheet" type="text/css" href="{% static 'books/style.css' %}" />
 
-<h3>{{ book.book.title }} - {{ book.list_condition }} - {{ book.listing_strategy }}</h3>
+<h3>{{ book.book.title }} - {{ book.list_condition }} - {{ book.listing_strategy }} - {{book.book.asin}}</h3>
 {% if book.status == 'RQ' %}
     <form action="{% url 'books:list' book.id %}" method="post">
         {% csrf_token %}
@@ -17,8 +17,8 @@
         <p><a href="{% url 'books:index' %}">Home</a> - <a href="{% url 'books:detail' prev.id %}">Prev</a> - <a href="{% url 'books:detail' next.id %}">Next</a> - <a href="http://camelcamelcamel.com/product/{{book.book.asin}}">Camel</a>
          - <a href="../../admin/books/book/{{ book.book.id }}">Edit</a>  - <a href="http://amazon.com/gp/offer-listing/{{ book.book.asin }}">Amazon</a></p>
         <table>
-                <tr><td>Purchase Price: ${{ book.purchase_price }}</td><td>Current Sales Rank: {{rank.rank}}</td><td>{{rank.rank_date}}</td></tr>
-                <tr><td>Current Low Price: ${{price.price}}</td><td>Sell Score: {{score.total_sell_score}}</td><td>My Price: ${{ book.last_ask_price }}</td></tr>
+                <tr><td>Purchase Price: ${{ book.purchase_price }}</td><td>Current Sales Rank: {{rank.rank}}</td><td>{{rank.rank_date}}</td><td>Current Edition: {{book.book.is_current_edition}}</td></tr>
+                <tr><td>Current Low Price: ${{price.price}}</td><td>Sell Score: {{price_score.current_price_score}}</td><td>My Price: ${{ book.last_ask_price }}</td><td>Previous Edition: {{book.book.is_previous_edition}}</td></tr>
                 <tr><td>High Sale Price: ${{price_score.highest_sold_price.price}}</td><td>High Sale Date: {{price_score.highest_sold_price.price_date}}</td><td>My Price: ${{ book.last_ask_price }}</td></tr>
         </table>
         <img src="{% url 'books:chart' book.id %}" width="400" height="300"/>
@@ -31,7 +31,13 @@
         <input type="submit" value="List" />
         </form>
         
+        
 {% endif %}
+            <form method="post" action="{% url 'books:update' book.book.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="q" id="id_q" value="{{ book.book.id }}"/>
+                <input type="submit" value="Update"/>
+            </form>
 <ul>
 
 </ul>
