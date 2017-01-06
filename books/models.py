@@ -312,8 +312,11 @@ class InventoryBook(models.Model):
         except:
             return False
             
-    def __str__(self):             
-        return self.book.title + ' [' + self.source + ']'   
+    def __str__(self):       
+        if self.book and self.book.title:     
+            return self.book.title + ' [' + self.source + ']'   
+        else:     
+            return str(self.id) + ' [' + self.source + ']'   
 
 class Price(models.Model):
     book = models.ForeignKey(Book, db_index=True, blank=True, null=True)
@@ -436,6 +439,7 @@ class BookScore(models.Model):
         #self.check_for_alert()
         
     def check_for_alert(self):
+        #print("check_for_alert: " + str(self))
         settings = Settings.objects.all()[0]
         newTarget= False
         usedTarget = False

@@ -225,6 +225,7 @@ def chase_lowest_prices():
  
     
         #time.sleep(120)
+    
     print('Chase Lowest Price End Time: ' + time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()))
 
 
@@ -237,6 +238,7 @@ def processLowPriceResults(books, asins, used_xml, new_xml, changed_prices):
             # don't check the same book twice
             if book in changed_prices:
                 continue
+            #changed_prices.append(book)
             #print('Found ' + str(book.book) + ' listed as ' + book.list_condition)
             if book.list_condition == '5':
                 if chase_low_price_new(book, new_xml):
@@ -319,6 +321,12 @@ def chase_low_price_used(book, used_xml, new_xml):
     return shouldLowerPrice(target_price, book)
         
 def processPriceResults(xml):
+    #print(xml.prettify())
+    if not xml.find('Product'):
+        print(xml.prettify())
+        raise AssertionError("No Product: What's goin on in heah")
+        
+
     for product in xml.find_all('Product'):
         #print(product.prettify())
         asin = product.find('ASIN').string
@@ -329,7 +337,8 @@ def processPriceResults(xml):
         price = Price()
         price.book = book
         if not product.find('Price'):
-            #print(product.prettify())
+            print(product.prettify())
+            print("No Price: What's goin on in heah")
             continue
         else:
             price.price = product.find('Price').LandedPrice.Amount.string
@@ -439,5 +448,5 @@ if __name__ == "__main__":
     print("Track books activity completed.")
     exit
     print('Inventory')
-    data_cleanup.clean_book_by_asin('1118358538')
+    #data_cleanup.clean_book_by_asin('1118358538')
     

@@ -65,11 +65,13 @@ def send_price_drop_feed():
     
 def send_chase_low_price_drop_feed(books):
     feed_messages = []
-    print("Sending price feed for " + str(len(books)) + 'books')
+    print("Sending price feed for " + str(len(books)) + ' books')
     #queryset = InventoryBook.objects.filter(status='LT', listing_strategy='30D')
     for book in books:
-
-        message = amazon_services.PriceMessage(book.sku, form.format(book.last_ask_price))
+        if book.sku:
+            message = amazon_services.PriceMessage(book.sku, form.format(book.last_ask_price), form.format(book.original_ask_price))
+        else:
+            print(str(book) + " has no sku")
         feed_messages.append(message)
         print(message)
         
