@@ -1,7 +1,8 @@
 {% load staticfiles %}
 
 <link rel="stylesheet" type="text/css" href="{% static 'books/style.css' %}" />
-<header>WhichEdition Header - {{ current_book.title }}</header>
+<header><img id='banner' src="{% static "books/we_banner.png" %}" alt="WHICH EDITION"/>
+WhichEdition Header - {{ current_book.title }}</header>
 <nav><form method="get" action="/books/search">
           
 
