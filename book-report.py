@@ -60,7 +60,7 @@ def login_pbs():
     print ("Cookie test:"+cookie_text_token)
     #post login form
     login_data={'cookie_test': cookie_text_token,
-        'username':'brent@brentnrachel.com',
+        'username':'brederic@gmail.com',
         'password':'w5PDJK4LbWwwq1JKtMWz',
         'submit':'Log in'}
     response = session.post('https://secure.paperbackswap.com/members/login.php',login_data,headers=user_agent)
@@ -149,6 +149,8 @@ def order_book(book_url):
     except (TypeError):
         return book_page.prettify()
     except (AttributeError):
+        return book_page.prettify()
+    except (IndexError):
         return book_page.prettify()
     #print(order_link)
     #click order button
@@ -478,6 +480,7 @@ def checkRecentPBSBooks( previousTimestamp):
             tree = etree.parse(pageURL)
         except IOError:
             print ('IOError: retrying...')
+            continue
         for book in tree.getroot().iterdescendants("Book"):
             try:
                 isbn = book.getchildren()[0].text
