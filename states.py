@@ -25,15 +25,16 @@ def list_books(queryset):
     
     for book in queryset:
         #make sure we have isbn
-        if not book.book.isbn:
-            amazon_services.get_book_info(book.book.asin)
-            book.refresh_from_db()
         try:
+            if not book.book.isbn:
+                amazon_services.get_book_info(book.book.asin)
+                book.refresh_from_db()
             if not  book.source == 'AMZ':
                 pbs.mark_book_as_received(book.book.isbn)
-        except:
-            print('Error in list_books()')
-            pass
+        except Exception as e:
+            print("Error marking book as received: " + str(book.book) + " Was it already marked received?")
+            #raise e
+
     
     return queryset.update(status='LT')
 
