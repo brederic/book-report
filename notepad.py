@@ -277,11 +277,15 @@ def report_high_sale_price():
         
 
 def monthly_report():
-  for month in range(10,11):
+  year = 2016
+  for month in range(1,13):
     # Purchases
-    target_date_start = timezone.datetime(2016,month,1) 
-    target_date_end = timezone.datetime(2016,month+1,1) 
-    print ('Report for 2016-'+str(month))
+    target_date_start = timezone.datetime(year,month,1) 
+    if not month == 12:
+        target_date_end = timezone.datetime(year,month+1,1) 
+    else: # December
+        target_date_end = timezone.datetime(year+1,1,1) 
+    print ('Report for '+str(year)+'-'+str(month))
     books = InventoryBook.objects.all().filter(request_date__lt=target_date_end, request_date__gte=target_date_start)
     total_coi = 0
     total_ask = 0
@@ -299,7 +303,7 @@ def monthly_report():
     for book in books:
         #print(book.book.title + ' Cost: $' + str(book.purchase_price))
         if book.sale_price:
-            total_ask += book.sale_price
+            total_ask += book.sale_price - (book.sale_price*Decimal('0.15')) - Decimal('2.34') #fees
             total_coi += book.purchase_price
         
     print ('Received $' +str(total_ask) + ' for ' + str(books.count())+ ' books,  earning $' + str(total_ask-total_coi))
@@ -477,6 +481,9 @@ def test_book_price():
     book = Book.objects.all().filter(asin='1285165918')[0]
     print(str(book.current_price_used()))
     
+def aggregate_book_prices():
+    
+    
         
 
 #find_sold_prices()
@@ -500,6 +507,7 @@ def test_book_price():
 #list_editions()
 #clean_book_by_asin('0321426770')
 #prepare_clean_books('old')
-count_cleaned_books('old')
+#count_cleaned_books('old')
 #test_book_price()
 #list_descriptions()
+repopulate_book_prices('013285337X')
