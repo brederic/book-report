@@ -482,7 +482,38 @@ def test_book_price():
     print(str(book.current_price_used()))
     
 def aggregate_book_prices():
-    
+    listed_books = InventoryBook.objects.filter(status='LT')
+    print(len(listed_books))
+    dates = []
+    prices ={}
+    days = 30
+    now = timezone.now()
+    timezone.now()-datetime.timedelta(days=settings.sales_rank_delta)
+    print(str(now))
+    for i in range(1,days):
+        new_date=now-datetime.timedelta(days=i)
+        dates.append(new_date)
+        prices[new_date] = 0
+        #print(str(new_date))
+    prev = now
+    for book in listed_books:
+        for day in dates:
+            #print(str(day))
+            condition = book.list_condition
+            if not condition == '5':
+                condition= '0'
+            price_list = Price.objects.filter(book=book.book, condition=condition, price_date__gte=day, price_date__lt=prev).order_by('price_date')
+            if price_list:
+                first_price = price_list[0]
+            else:
+                continue
+            #print(str(first_price.price))
+            
+            prices[day] += first_price.price
+    for k in sorted(prices.keys()):
+        print(str(k), str(prices[k]))
+        
+        
     
         
 
@@ -510,4 +541,5 @@ def aggregate_book_prices():
 #count_cleaned_books('old')
 #test_book_price()
 #list_descriptions()
-repopulate_book_prices('013285337X')
+#repopulate_book_prices('013285337X')
+aggregate_book_prices()
