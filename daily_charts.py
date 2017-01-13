@@ -109,14 +109,14 @@ def aggregate(strategy):
         dates.append(new_date)
         prices[new_date] = 0
         #print(str(new_date))
-    prev = now
     for book in listed_books:
+        prev = now
         for day in dates:
             #print(str(day))
             condition = book.list_condition
             if not condition == '5':
                 condition= '0'
-            price_list = Price.objects.filter(book=book.book, condition=condition, price_date__gte=day, price_date__lt=prev).order_by('price_date')
+            price_list = Price.objects.filter(book=book.book, condition=condition, price_date__gte=day, price_date__lt=prev).order_by('-price_date')
             if price_list:
                 first_price = price_list[0]
             else:
@@ -124,6 +124,7 @@ def aggregate(strategy):
             #print(str(first_price.price))
             
             prices[day] += first_price.price
+            prev = day
     x=[]
     y=[]
     for k in sorted(prices.keys()):
@@ -133,7 +134,7 @@ def aggregate(strategy):
         #print(str(k), str(prices[k]))
     data = np.array(x, dtype='S10')
     dates = mdates.num2date(mdates.datestr2num(data))
-
+    plt.hold(False)
     plt.plot(dates, y)
     plt.xlabel('Date')
     plt.ylabel('Total Price')
@@ -210,5 +211,5 @@ def book_image(request, book_id, condition):
     return response
 
 
-#aggregate('ALL')
+aggregate('ALL')
 aggregate('30D')
