@@ -91,7 +91,7 @@ class InventoryBookAdmin(admin.ModelAdmin):
         if not errors == '':
             self.message_user(request, 'Listing Errors:\n' + errors, message_constants.ERROR)
             return
-        rows_updated = states.list_books(queryset)
+        rows_updated = queryset.update(needs_listed = True)
         if rows_updated == 1:
             message_bit = "1 book was"
         else:
@@ -127,7 +127,12 @@ class InventoryBookAdmin(admin.ModelAdmin):
         if not errors == '':
             self.message_user(request, 'Listing Errors:\n' + errors, message_constants.ERROR)
             return
-        rows_updated = queryset.update(listing_strategy='LOW')
+        rows_updated = queryset.update(listing_strategy='LOW', needs_listed = True)
+        for book in queryset:
+            try:
+                book.prepare_for_listing()
+            except InputError as e:
+                errors= errors +'\n['+  book.book.title + ' : ' + e.message+ ']'
         if rows_updated == 1:
             message_bit = "1 book was"
         else:
@@ -145,7 +150,12 @@ class InventoryBookAdmin(admin.ModelAdmin):
         if not errors == '':
             self.message_user(request, 'Listing Errors:\n' + errors, message_constants.ERROR)
             return
-        rows_updated = queryset.update(listing_strategy='30D')
+        rows_updated = queryset.update(listing_strategy='30D', needs_listed = True)
+        for book in queryset:
+            try:
+                book.prepare_for_listing()
+            except InputError as e:
+                errors= errors +'\n['+  book.book.title + ' : ' + e.message+ ']'
         if rows_updated == 1:
             message_bit = "1 book was"
         else:
@@ -164,7 +174,12 @@ class InventoryBookAdmin(admin.ModelAdmin):
         if not errors == '':
             self.message_user(request, 'Listing Errors:\n' + errors, message_constants.ERROR)
             return
-        rows_updated = queryset.update(listing_strategy='HHI', original_ask_price = F('purchase_price') * settings.hold_high_multiple, last_ask_price= F('purchase_price') * settings.hold_high_multiple)
+        rows_updated = queryset.update(listing_strategy='HHI', needs_listed = True)
+        for book in queryset:
+            try:
+                book.prepare_for_listing()
+            except InputError as e:
+                errors= errors +'\n['+  book.book.title + ' : ' + e.message+ ']'
         if rows_updated == 1:
             message_bit = "1 book was"
         else:
@@ -204,7 +219,7 @@ admin.site.register(SalesRank, SalesRankAdmin)
 
 class FeedLogAdmin(admin.ModelAdmin):
     list_display = ['feed_type', 'status', 'status_time']
-    #search_fields = ['book.asin', 'book.title']
+    search_fields = ['amazon_feed_id']
     list_filter = ['status', 'needs_attention']
 
 admin.site.register(FeedLog, FeedLogAdmin)

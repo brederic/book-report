@@ -26,6 +26,9 @@
         {% csrf_token %}
         <input type="text" name="Price" id="original_ask_price" value="{{ book.original_ask_price}}" />
         <input type="text" name="Condition" id="list_condition" value="{{ book.list_condition}}" />
+        <input type="radio" name="strategy" value="HHI" {% if book.listing_strategy == 'HHI' %}checked {% endif %}>Hold High<br>
+        <input type="radio" name="strategy" value="LOW" {% if book.listing_strategy == 'LOW' %}checked {% endif %}> Chase Low Price<br>
+        <input type="radio" name="strategy" value="39D" {% if book.listing_strategy == '30D' %}checked {% endif %}> 30-Day Drop<br>  
         
  
         <input type="submit" value="List" />

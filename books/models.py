@@ -261,6 +261,7 @@ class InventoryBook(models.Model):
     sale_date = models.DateField(null=True, blank=True)
     last_ask_price = models.DecimalField(max_digits=7, decimal_places=2, null=True,blank=True)
     sale_price = models.DecimalField(max_digits=7, decimal_places=2, null=True,blank=True)
+    needs_listed = models.BooleanField(default=False, db_index=True)
     def book_link(self):
       return '<a href="%s">%s [%s]</a>' % (reverse("admin:books_book_change", args=(self.book.id,)) , escape(self.book) , self.book.isbn13)
 
@@ -295,6 +296,14 @@ class InventoryBook(models.Model):
         self.list_date = datetime.date.today()
         self.save()
         return True
+    
+    def change_listing_strategy(self, strategy):
+        if strategy == '30D' or strategy == 'LOW' or strategy == 'HHI':
+            self.listing_strategy = strategy
+            self.prepare_for_listing()
+            self.needs_listed = True
+            self.save()
+        
         
     def delete(self, *args, **kwargs):
         raise RuntimeError('InventoryBook should never be deleted!')

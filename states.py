@@ -14,6 +14,9 @@ import feeds
 import pbs
 import amazon_services
 
+def list_book(book):
+    qs = InventoryBook.objects.filter(id=book.pk)
+    list_books(qs)
 
 
 def list_books(queryset):

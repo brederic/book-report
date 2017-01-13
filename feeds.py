@@ -144,6 +144,36 @@ def process_feed_queue():
         top_feed.status_time = timezone.now()
         top_feed.save()
         
+
+
+def list_books():
+    queryset = InventoryBook.objects.filter(needs_listed=True)
+    if len(queryset) == 0:
+        return
+    print("Listing %d books."%len(queryset))
+    #run feeds to update amazon
+    generate_product_feed( queryset)
+    generate_inventory_feed( queryset, 1)
+    generate_price_feed( queryset)
+    #mark books as received at PBS, if necessary
+    
+    for book in queryset:
+        #make sure we have isbn
+        try:
+            if not book.book.isbn:
+                amazon_services.get_book_info(book.book.asin)
+                book.refresh_from_db()
+            if not  book.source == 'AMZ':
+                pbs.mark_book_as_received(book.book.isbn)
+        except Exception as e:
+            print("Error marking book as received: " + str(book.book) + " Was it already marked received?")
+            #raise e
+
+    
+    return queryset.update(status='LT',needs_listed=False)
+
+
+    
       
              
         
@@ -156,6 +186,7 @@ def set_default_listing_strategy():
         book.save()
         
 if __name__ == "__main__":
-        process_feed_queue()
+    list_books()
+    process_feed_queue()
 
 

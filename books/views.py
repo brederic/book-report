@@ -5,13 +5,15 @@ from django.db.models import Q, Max, Count, F
 from django.core.urlresolvers import reverse
 import search
 
+import states
+
 from .models import Book, InventoryBook, Price, BookScore, SalesRank
 
 from .charts import simple, book_image
 
 review_strategy='ALL'
 
-review_strategy='LOW'
+review_strategy='HHI'
 
 
 def index(request):
@@ -228,7 +230,12 @@ def results(request, book_id):
     return HttpResponse(response % book_id)
 
 def list_book(request, book_id):
-    return HttpResponse("You're listing book %s." % book_id)
+    book = get_object_or_404(InventoryBook, pk=book_id)
+    strategy = request.POST.get("strategy", "")
+    book.change_listing_strategy(strategy)
+    states.list_book(book)
+    
+    return HttpResponseRedirect(reverse('books:detail',args=(book.pk,)))
 
 def simple_chart(request, book_id):
     return simple(request, book_id);
