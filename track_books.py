@@ -48,6 +48,8 @@ def track_book_prices():
     
     ## only use sales data until we clear out the db some
     scored_books = Book.objects.filter(salesrank__rank_date__gte=sales_rank_date).annotate(max_sr=Max('salesrank__rank')).filter(max_sr__lte=settings.worst_sales_rank)
+    ## only use listed book to save time
+    #scored_books = Book.objects.filter(inventorybook__status='LT')
     
     #scored_books = Book.objects.filter(asin='1405182407')
     
@@ -250,7 +252,7 @@ def processLowPriceResults(books, asins, used_xml, new_xml, changed_prices):
     
 def shouldLowerPrice(low_price, book):
     if (low_price < (Decimal(book.last_ask_price) + Decimal('3.99'))):
-        minimum_price = book.purchase_price * settings.chase_low_floor_multiple
+        minimum_price = max(book.purchase_price * settings.chase_low_floor_multiple, settings.chase_low_floor_price)
         if (low_price >= minimum_price  + Decimal('3.99')):
             # the lowest price is above our floor, so match it
             print('Lower price on ' + str(book.book) + ' to $' + str(low_price - Decimal('3.99')))

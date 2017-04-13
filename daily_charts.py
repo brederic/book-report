@@ -99,6 +99,7 @@ def aggregate(strategy):
         listed_books = InventoryBook.objects.filter(status='LT', listing_strategy=strategy)
     print(len(listed_books))
     dates = []
+    bad_dates = []
     prices ={}
     days = 30
     now = timezone.now()
@@ -125,13 +126,16 @@ def aggregate(strategy):
             
             prices[day] += first_price.price
             prev = day
+
     x=[]
     y=[]
+
     for k in sorted(prices.keys()):
-        x.append(k)
-        #now+=delta
-        y.append(prices[k])
-        #print(str(k), str(prices[k]))
+        #if prices[k] > 100:
+            x.append(k)
+            #now+=delta
+            y.append(prices[k])
+            #print(str(k), str(prices[k]))
     data = np.array(x, dtype='S10')
     dates = mdates.num2date(mdates.datestr2num(data))
     plt.hold(False)

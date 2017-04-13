@@ -85,6 +85,12 @@ class Settings(models.Model):
     hold_high_multiple = models.IntegerField(default=8)
     # multiple of purchase price which is the minimum price to which chase low price will go
     chase_low_floor_multiple = models.DecimalField(max_digits=4, decimal_places=2, default='1.50')
+    # the minimum price to which chase low price will go
+    chase_low_floor_price = models.DecimalField(max_digits=4, decimal_places=2, default='5.50')
+    # true if chase low price books should have their prices lowered at least once a day
+    chase_low_closeout = models.BooleanField(default=True)
+    # when chase_low books are on closeout, the amount the price should be lowered each day if the price has not been automatically lowered to match the competition 
+    closeout_daily_discount = models.DecimalField(max_digits=4, decimal_places=2, default='0.10')
     high_price_ideal = models.DecimalField(max_digits=10, decimal_places=2, default='150.00')
     # this is the datetime of the most recent order report
     last_order_report = models.DateTimeField(null=True, default='2015-07-15')
@@ -466,7 +472,7 @@ class BookScore(models.Model):
                 if self.book.is_current_edition() or self.book.is_previous_edition():
                     print('new')
                     newTarget= True
-            if usedPriceScore.get_current_price_score()<settings.target_discount and usedPriceScore.most_recent_price.good_price<= settings.max_used_purchase_price:
+            if usedPriceScore.get_current_price_score() and usedPriceScore.get_current_price_score()<settings.target_discount and usedPriceScore.most_recent_price.good_price<= settings.max_used_purchase_price:
                 #usedTarget = True
                 # It has to be a current edition or be the previous edition and have a recent expiration date
                 if self.book.is_current_edition():
@@ -520,7 +526,12 @@ class PriceScore(models.Model):
     off_recent_low_score = models.FloatField( blank=True, default=0.00)
     total_buy_score = models.FloatField( default=0.00, db_index=True)
     off_recent_high_score  = models.FloatField( blank=True, default=0.00)
-    total_sell_score  = models.FloatField(blank=True, default=0.00, db_index=True)  
+    total_sell_score  = models.FloatField(blank=True, default=0.00, db_index=True)
+    highest_sold_price_last_season = models.ForeignKey(Price, null=True, db_index=True, related_name='high_last_season')
+    highest_sold_price_last_year = models.ForeignKey(Price, null=True, db_index=True, related_name='high_last_year')
+    lowest_offer_since_last_season = models.ForeignKey(Price, null=True, db_index=True, related_name='low_last_season')
+    lowest_offer_last_year = models.ForeignKey(Price, null=True, db_index=True, related_name='low_last_year')
+    highest_sold_price_this_season = models.ForeignKey(Price, null=True, db_index=True, related_name='high_this_season')
     
     def check_sold_price(self, price):
         if self.highest_sold_price:

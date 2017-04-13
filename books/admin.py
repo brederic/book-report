@@ -197,7 +197,7 @@ class InventoryBookAdmin(admin.ModelAdmin):
         ('Sell', {'fields': ['sale_date', 'last_ask_price', 'sale_price'], 
         'classes': ['collapse']}),
     ]
-    list_display = ('book', 'purchase_condition', 'list_condition', 'status', 'listing_strategy',  'request_date', 'list_date')
+    list_display = ('book', 'purchase_condition', 'list_condition', 'status', 'listing_strategy',  'request_date', 'list_date', 'sale_date')
     list_filter = ['status', 'listing_strategy', 'source']
     readonly_fields = ['book_link']
     

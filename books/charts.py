@@ -24,7 +24,7 @@ def simple(request, book_id):
     #start_date = settings.last_semester_start
     #start_date = settings.last_semester_start
     start_date = now-datetime.timedelta(days=settings.sales_rank_delta)
-    start_date = now-datetime.timedelta(days=30)
+    start_date = now-datetime.timedelta(days=7)
 
     prices = Price.objects.filter(book=inventory_book.book, price_date__gte=start_date, condition=condition).order_by('-price_date')
     ranks = SalesRank.objects.filter(book=inventory_book.book, rank_date__gte=start_date).order_by('-rank_date')

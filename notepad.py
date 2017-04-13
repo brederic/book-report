@@ -252,8 +252,8 @@ def fix_fall_price():
     
 def cost_of_inventory():
     target_date = timezone.now()
-    #target_date = timezone.datetime(2016,1,1) 
-    books = InventoryBook.objects.all().filter(list_date__lt=target_date).filter(Q(sale_date__gte=target_date) |  Q(status='LT')).filter(source='AMZ')
+    target_date = timezone.datetime(2017,1,1) 
+    books = InventoryBook.objects.all().filter(request_date__lt=target_date).filter(Q(sale_date__gte=target_date) |  Q(status='LT')) #.filter(source='AMZ')
     total_coi = 0
     total_ask = 0
     sold_books = InventoryBook.objects.all().filter(Q(status='SH') | Q(status='SD')).filter(source='AMZ').aggregate(ave_sale_price=Avg('sale_price'))
@@ -277,8 +277,8 @@ def report_high_sale_price():
         
 
 def monthly_report():
-  year = 2016
-  for month in range(1,13):
+  year = 2017
+  for month in range(3,4):
     # Purchases
     target_date_start = timezone.datetime(year,month,1) 
     if not month == 12:
@@ -524,7 +524,7 @@ def aggregate_book_prices():
 #check_review_data()
 #clean_track()
 #test_check_for_alert()
-#monthly_report()
+monthly_report()
 #cost_of_inventory()
 #report_high_sale_price()
 #add_isbn13()
@@ -538,7 +538,7 @@ def aggregate_book_prices():
 #list_editions()
 #clean_book_by_asin('0321426770')
 #prepare_clean_books('old')
-count_cleaned_books('old')
+#count_cleaned_books('old')
 #test_book_price()
 #list_descriptions()
 #repopulate_book_prices('013285337X')

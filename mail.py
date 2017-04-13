@@ -4,6 +4,7 @@ from email.mime.text import MIMEText
 
 
 check_book_addrs = ['x+226502906786752@mail.asana.com', 'sarah@brentnrachel.com']
+#check_book_addrs = ['brederic@gmail.com']
 
 def send_check_book(subject, msg):
     fromaddr = 'brederic@gmail.com'

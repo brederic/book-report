@@ -342,7 +342,7 @@ def reconcile_books():
         print ("Reconciliation in progress. Do not restart it.")
         return
     while True:
-        books = Book.objects.using('old').filter(high_sale_price_updated=False,track=True)[0:1000]
+        books = Book.objects.using('old').filter(high_sale_price_updated=False)[0:1000]
         if len(books) == 0:
             break
         for book in books:

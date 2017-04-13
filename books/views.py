@@ -13,7 +13,7 @@ from .charts import simple, book_image
 
 review_strategy='ALL'
 
-review_strategy='HHI'
+review_strategy='LOW'
 
 
 def index(request):
@@ -233,8 +233,7 @@ def list_book(request, book_id):
     book = get_object_or_404(InventoryBook, pk=book_id)
     strategy = request.POST.get("strategy", "")
     book.change_listing_strategy(strategy)
-    states.list_book(book)
-    
+     
     return HttpResponseRedirect(reverse('books:detail',args=(book.pk,)))
 
 def simple_chart(request, book_id):
