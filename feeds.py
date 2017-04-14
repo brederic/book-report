@@ -6,6 +6,10 @@ import datetime
 from django.db.models import Q, Max, Count
 from django.utils import timezone
 from xml.sax.saxutils import escape
+from decimal import *
+
+
+getcontext().prec = 8
 
 if __name__ == "__main__":
         sys.path.append('/home/brentp/Projects/book_report')
@@ -42,7 +46,11 @@ def request_feed(feed_type, feed_xml, queryset):
     feed.save()
     
 
-def send_price_drop_feed():
+def send_price_drop_feed(): 
+    send_30d_price_drop_feed() 
+    send_low_price_drop_feed()  
+
+def send_30d_price_drop_feed():
     ### Get books in inventory that are currently listed and have 30-day listing strategy
     feed_messages = []
     queryset = InventoryBook.objects.filter(status='LT', listing_strategy='30D')
@@ -57,19 +65,62 @@ def send_price_drop_feed():
         print(str(book) + 'newPrice: ' + str(newPrice))
         book.last_ask_price = newPrice
         book.save()
-        message = amazon_services.PriceMessage(book.sku, form.format(newPrice))
+        message = amazon_services.PriceMessage(book.sku, form.format(newPrice), form.format(book.original_ask_price))
         feed_messages.append(message)
         
     feed_xml = amazon_services.generateFeedContent(amazon.PRICE_FEED, feed_messages)
     request_feed(amazon.PRICE_FEED, feed_xml, queryset)
     
+def send_low_price_drop_feed():
+    
+    ### If we are in closeout, Get books in inventory that are currently listed and have chase low listing strategy, and whose price has not dropped in the last day
+    if settings.chase_low_closeout:
+            feed_messages = []
+            now = timezone.now()
+            one_day_ago = now-datetime.timedelta(days=1)
+            two_days_ago = now-datetime.timedelta(days=2)
+            queryset = InventoryBook.objects.filter(status='LT', listing_strategy='LOW')
+            print("Books to check: " + str(len(queryset)))
+            for book in queryset:
+                if book.list_condition == '5':
+                    condition = '5'
+                else:
+                    condition = '0'
+                recent_prices = Price.objects.filter(book=book.book, condition=condition, price_date__gte=one_day_ago).order_by("-price_date")
+                current_price = recent_prices[0].price
+                unsorted_prices = recent_prices.all()
+                prices_by_amount = sorted(unsorted_prices, key=lambda p: -p.price)
+                max_price = prices_by_amount[0].price
+                min_price = prices_by_amount[:1][0].price
+                print(str(book) + ' Current price: ' + str(current_price) + ' max_price: ' + str(max_price) + ' min_price: ' + str(min_price) + ' drop price? ' + str(current_price == max_price))
+                print(' Condition: ' + str(book.list_condition) +' Condition: ' + str(condition) + ' price count: ' + str(len(prices_by_amount)) )
+                if current_price == max_price:
+                    # the price has not dropped in the last day , so we will drop it
+                    current_price = current_price - Decimal("3.99") #adjust for shipping
+                    newPrice = current_price * (1-settings.closeout_daily_discount)
+                    if newPrice >= settings.chase_low_floor_price:
+                        print(str(book) + 'current_price: ' + str(current_price)+ ' newPrice: ' + str(newPrice))
+                        book.last_ask_price = newPrice
+                        book.save()
+                        message = amazon_services.PriceMessage(book.sku, form.format(newPrice), form.format(book.original_ask_price))
+                        feed_messages.append(message)
+                        print("Price messages: " + str(len(feed_messages)))
+            
+                
+            print("Price messages: " + str(len(feed_messages)))
+            feed_xml = amazon_services.generateFeedContent(amazon.PRICE_FEED, feed_messages)
+            request_feed(amazon.PRICE_FEED, feed_xml, queryset)
+        
+    
 def send_chase_low_price_drop_feed(books):
     feed_messages = []
-    print("Sending price feed for " + str(len(books)) + 'books')
+    print("Sending price feed for " + str(len(books)) + ' books')
     #queryset = InventoryBook.objects.filter(status='LT', listing_strategy='30D')
     for book in books:
-
-        message = amazon_services.PriceMessage(book.sku, form.format(book.last_ask_price))
+        if book.sku:
+            message = amazon_services.PriceMessage(book.sku, form.format(book.last_ask_price), form.format(book.original_ask_price))
+        else:
+            print(str(book) + " has no sku")
         feed_messages.append(message)
         print(message)
         
@@ -83,7 +134,7 @@ def generate_price_feed(queryset):
     feed_messages = []
     for book in queryset:
         print('Sending price feed for: ' + str(book))
-        message = amazon_services.PriceMessage(book.sku, book.original_ask_price)
+        message = amazon_services.PriceMessage(book.sku, book.original_ask_price, book.original_ask_price)
         feed_messages.append(message)
     feed_xml =  amazon_services.generateFeedContent(amazon.PRICE_FEED, feed_messages)
     request_feed(amazon.PRICE_FEED, feed_xml, queryset)
@@ -142,6 +193,36 @@ def process_feed_queue():
         top_feed.status_time = timezone.now()
         top_feed.save()
         
+
+
+def list_books():
+    queryset = InventoryBook.objects.filter(needs_listed=True)
+    if len(queryset) == 0:
+        return
+    print("Listing %d books."%len(queryset))
+    #run feeds to update amazon
+    generate_product_feed( queryset)
+    generate_inventory_feed( queryset, 1)
+    generate_price_feed( queryset)
+    #mark books as received at PBS, if necessary
+    
+    for book in queryset:
+        #make sure we have isbn
+        try:
+            if not book.book.isbn:
+                amazon_services.get_book_info(book.book.asin)
+                book.refresh_from_db()
+            #if not  book.source == 'AMZ':
+            #pbs.mark_book_as_received(book.book.isbn)
+        except Exception as e:
+            print("Error marking book as received: " + str(book.book) + " Was it already marked received?")
+            #raise e
+
+    
+    return queryset.update(status='LT',needs_listed=False)
+
+
+    
       
              
         
@@ -154,6 +235,7 @@ def set_default_listing_strategy():
         book.save()
         
 if __name__ == "__main__":
-        process_feed_queue()
+    list_books()
+    process_feed_queue()
 
 

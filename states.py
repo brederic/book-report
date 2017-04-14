@@ -14,28 +14,11 @@ import feeds
 import pbs
 import amazon_services
 
+def list_book(book):
+    qs = InventoryBook.objects.filter(id=book.pk)
+    list_books(qs)
 
 
-def list_books(queryset):
-    #run feeds to update amazon
-    feeds.generate_product_feed( queryset)
-    feeds.generate_inventory_feed( queryset, 1)
-    feeds.generate_price_feed( queryset)
-    #mark books as received at PBS, if necessary
-    
-    for book in queryset:
-        #make sure we have isbn
-        if not book.book.isbn:
-            amazon_services.get_book_info(book.book.asin)
-            book.refresh_from_db()
-        try:
-            if not  book.source == 'AMZ':
-                pbs.mark_book_as_received(book.book.isbn)
-        except:
-            print('Error in list_books()')
-            pass
-    
-    return queryset.update(status='LT')
 
 
 def donate_books(queryset):

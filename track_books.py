@@ -5,12 +5,18 @@ import logging, traceback
 import django
 import datetime
 import time
+import mail
 from django.db.models import Q, Max, Count
 from django.utils import timezone
 import math
 from decimal import *
+from django.db import transaction
+import string
+
 
 getcontext().prec = 8
+
+
 
 if __name__ == "__main__":
         sys.path.append('/home/brentp/Projects/book_report')
@@ -22,46 +28,158 @@ if __name__ == "__main__":
 
 MAX_SALES_RANK = 250000
 
-import amazon, amazon_services, feeds
+import amazon, amazon_services, feeds, data_cleanup
 from books.models import Book, Price, SalesRank, InventoryBook, Settings, FeedLog, SUB_CONDITION_CHOICES
 
 settings = Settings.objects.all()[0]
 sales_rank_date = timezone.now()-datetime.timedelta(days=settings.sales_rank_delta)
 
+def send_email():
+    #send alert
+    msg = 'You may want to start the book delete script now'
+    mail.sendEmail('Track books is finished', msg)
+    
 def track_book_prices():
   
     print('Track Books Start Time: ' + time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()))
-    scored_books = Book.objects.filter(salesrank__rank_date__gte=sales_rank_date)\
-        .annotate(max_sr=Max('salesrank__rank')).filter(max_sr__lte=settings.worst_sales_rank)
+    # choose books whose sales rank has stayed above worst_sales_rank for the past year and whose price has gotten above lowest_high_price in the past year
+    #scored_books = Book.objects.filter(price__price_date__gte=sales_rank_date).annotate(max_pr=Max('price__price')).filter(max_pr__lte=settings.lowest_high_price)\
+    #   .filter(salesrank__rank_date__gte=sales_rank_date).annotate(max_sr=Max('salesrank__rank')).filter(max_sr__lte=settings.worst_sales_rank)
+    
+    ## only use sales data until we clear out the db some
+    scored_books = Book.objects.filter(salesrank__rank_date__gte=sales_rank_date).annotate(max_sr=Max('salesrank__rank')).filter(max_sr__lte=settings.worst_sales_rank)
+    ## only use listed book to save time
+    #scored_books = Book.objects.filter(inventorybook__status='LT')
+    
+    #scored_books = Book.objects.filter(asin='1405182407')
+    
+    
+    
+    #print ('track count: ' + str(len(scored_books)))
+    
+    # set their track flag and clear their review flags
     scored_books.update(track=True, newReview = False, usedReview = False)
-    tracked_asins = Book.objects.filter(track=True).distinct().values_list('asin', flat=True)
-    #tracked_asins = Book.objects.all().values_list('asin', flat=True)
-    total = tracked_asins.count()
-    delay = 2.05 #s
+    # get a list of asins for the books we want to track
+    tracked_asins = list(Book.objects.filter(track=True).distinct().values_list('asin', flat=True))
+    #tracked_asins = list(Book.objects.filter(asin='1405182407').distinct().values_list('asin', flat=True))
+    
+    total = len(tracked_asins)
+    print ('track count: ' + str(total))
+    
+    # get price info for 10 books at a time
     for page in range(0, int(math.ceil(total/10))):
-      try:
+        check_process_now()
         asin_slice = tracked_asins[page*10:min(total, page*10+10)]
-        #print(time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()) + str(asin_slice))
+        if len(asin_slice) == 0: 
+            print(time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()) + str(asin_slice))
+            continue
+        process_asin_slice(asin_slice)
+
+    print('Track Books End Time: ' + time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()))
+    send_email()
+
+def check_process_now():
+    # get a list of asins for the books we want to track
+    tracked_asins = list(Book.objects.filter(process_now=True).distinct().values_list('asin', flat=True))
+    #tracked_asins = list(Book.objects.filter(asin='1405182407').distinct().values_list('asin', flat=True))
+    
+    total = len(tracked_asins)
+    #if total == 0:
+    #    return
+    print ('process_now: ' + str(total))
+    
+    # get price info for 10 books at a time
+    for page in range(0, int(math.ceil(total/10))):
+        asin_slice = tracked_asins[page*10:min(total, page*10+10)]
+        if len(asin_slice) == 0: 
+            print("Finished with process_now")
+            return
+        process_asin_slice(asin_slice)   
+        #clear process_now  flag 
+        books  = Book.objects.filter(asin__in=asin_slice)
+        books.update(process_now=False)
+        
+        
+def process_asin_slice(asin_slice):
+    # throttle our requests 
+    delay = 2.05 #s
+    try:
+        # Get used price info
         timeBefore = timezone.now()
         result = amazon_services.get_book_price_info(asin_slice, 'Used')
         processPriceResults(result)
-        elapsedTime = (timezone.now()-timeBefore).microseconds/1e6
+        # don't overload the API
+        elapsedTime = (timezone.now()-timeBefore).total_seconds()
         sleepTime = max(0,delay-elapsedTime)
         print('Process took '+ str(elapsedTime) + '. Sleeping for ' + str(sleepTime))
+        #data_cleanup.clean_books(sleepTime)
         time.sleep(sleepTime)
-        
+        # Get new price info
         timeBefore = timezone.now()
         result = amazon_services.get_book_price_info(asin_slice, 'New')
         processPriceResults(result)
-        elapsedTime = (timezone.now()-timeBefore).microseconds/1e6
+        elapsedTime = (timezone.now()-timeBefore).total_seconds()
         sleepTime = max(0,delay-elapsedTime)
         print('Process took '+ str(elapsedTime) + '. Sleeping for ' + str(sleepTime))
+        #.clean_books(sleepTime)
         time.sleep(sleepTime)
-        
+        # Get sales rank info
         timeBefore = timezone.now()
         result = amazon_services.get_book_salesrank_info(asin_slice)
         processSalesRankResults(result)
-        elapsedTime = (timezone.now()-timeBefore).microseconds/1e6
+        elapsedTime = (timezone.now()-timeBefore).total_seconds()
+        sleepTime = max(0,delay-elapsedTime)
+        print('Process took '+ str(elapsedTime) + '. Sleeping for ' + str(sleepTime))
+        #data_cleanup.clean_books(sleepTime)
+        time.sleep(sleepTime)
+        
+    
+        
+    except:
+        print("Unknown Error in track_book_prices {0}".format(sys.exc_info()[0]))
+        traceback.print_exc()
+        print (asin_slice)
+        time.sleep(120)
+
+def track_book_metadata():
+    
+    print('Track Books Metadata Start Time: ' + time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()))
+    # choose books whose sales rank has stayed above worst_sales_rank for the past year and whose price has gotten above lowest_high_price in the past year
+    #scored_books = Book.objects.filter(price__price_date__gte=sales_rank_date).annotate(max_pr=Max('price__price')).filter(max_pr__lte=settings.lowest_high_price)\
+    #   .filter(salesrank__rank_date__gte=sales_rank_date).annotate(max_sr=Max('salesrank__rank')).filter(max_sr__lte=settings.worst_sales_rank)
+    
+    ## only use sales data until we clear out the db some
+    #scored_books = Book.objects.filter(salesrank__rank_date__gte=sales_rank_date).annotate(max_sr=Max('salesrank__rank')).filter(max_sr__lte=settings.worst_sales_rank)
+    
+    #scored_books = Book.objects.exclude(current_edition=None)
+    
+    
+    
+    #print ('track count: ' + str(len(scored_books)))
+    
+    # set their track flag and clear their review flags
+    #scored_books.update(track=True, newReview = False, usedReview = False)
+    # get a list of asins for the books we want to track
+    tracked_asins = list(Book.objects.filter(page_count=None).values_list('asin', flat=True))
+    
+    total = len(tracked_asins)
+    print ('track count: ' + str(total))
+    
+    # throttle our requests 
+    delay = 3.05 #s
+    # get price info for 10 books at a time
+    for page in range(0, int(math.ceil(total/10))):
+      try:
+        asin_slice = tracked_asins[page*10:min(total, page*10+10)]
+        if len(asin_slice) == 0: 
+            print(time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()) + str(asin_slice))
+            continue
+        # Get metadata
+        timeBefore = timezone.now()
+        result = amazon_services.get_book_metadata(asin_slice)
+        
+        
+        elapsedTime = (timezone.now()-timeBefore).total_seconds()
         sleepTime = max(0,delay-elapsedTime)
         print('Process took '+ str(elapsedTime) + '. Sleeping for ' + str(sleepTime))
         time.sleep(sleepTime)
@@ -69,11 +187,12 @@ def track_book_prices():
     
         
       except:
-        print("Unknown Error in track_book_prices {0}".format(sys.exc_info()[0]))
+        print("Unknown Error in track_book_metadata {0}".format(sys.exc_info()[0]))
         traceback.print_exc()
         print (asin_slice)
         time.sleep(120)
-    print('Track Books End Time: ' + time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()))
+    print('Track Books Metadata End Time: ' + time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()))
+    send_email()
 
 def chase_lowest_prices():
     # if there is a price feed waiting to process, don't add another at this time
@@ -108,7 +227,9 @@ def chase_lowest_prices():
  
     
         #time.sleep(120)
+    
     print('Chase Lowest Price End Time: ' + time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()))
+
 
         
 def processLowPriceResults(books, asins, used_xml, new_xml, changed_prices):
@@ -119,6 +240,7 @@ def processLowPriceResults(books, asins, used_xml, new_xml, changed_prices):
             # don't check the same book twice
             if book in changed_prices:
                 continue
+            #changed_prices.append(book)
             #print('Found ' + str(book.book) + ' listed as ' + book.list_condition)
             if book.list_condition == '5':
                 if chase_low_price_new(book, new_xml):
@@ -130,7 +252,7 @@ def processLowPriceResults(books, asins, used_xml, new_xml, changed_prices):
     
 def shouldLowerPrice(low_price, book):
     if (low_price < (Decimal(book.last_ask_price) + Decimal('3.99'))):
-        minimum_price = book.purchase_price * settings.chase_low_floor_multiple
+        minimum_price = max(book.purchase_price * settings.chase_low_floor_multiple, settings.chase_low_floor_price)
         if (low_price >= minimum_price  + Decimal('3.99')):
             # the lowest price is above our floor, so match it
             print('Lower price on ' + str(book.book) + ' to $' + str(low_price - Decimal('3.99')))
@@ -201,13 +323,24 @@ def chase_low_price_used(book, used_xml, new_xml):
     return shouldLowerPrice(target_price, book)
         
 def processPriceResults(xml):
+    #print(xml.prettify())
+    if not xml.find('Product'):
+        print(xml.prettify())
+        raise AssertionError("No Product: What's goin on in heah")
+        
+
     for product in xml.find_all('Product'):
+        #print(product.prettify())
         asin = product.find('ASIN').string
-        book = Book.objects.get(asin=asin)
+        try:
+            book = Book.objects.get(asin=asin)
+        except:
+            continue
         price = Price()
         price.book = book
         if not product.find('Price'):
-            #print(product.prettify())
+            print(product.prettify())
+            print("No Price: What's goin on in heah")
             continue
         else:
             price.price = product.find('Price').LandedPrice.Amount.string
@@ -216,6 +349,12 @@ def processPriceResults(xml):
             price.condition = '5'
         elif condition == 'Used':
             price.condition = '0'
+            # get first price that has better than acceptable subcondition
+            sc = product.find('ItemSubcondition',string=["Good", "VeryGood", "LikeNew"])
+            if sc:
+                price.good_price = sc.parent.parent.Price.LandedPrice.Amount.string
+            else:
+                price.good_price = float(price.price)*1.1
         price.price_date = timezone.now()
         price.save()
         #print(str(book) + str(price))
@@ -224,7 +363,10 @@ def processSalesRankResults(xml):
     #print(xml.prettify())
     for product in xml.find_all('Product'):
         asin = product.find('ASIN').string
-        book = Book.objects.get(asin=asin)
+        try:
+            book = Book.objects.get(asin=asin)
+        except:
+            continue
         ranktag = product.find('SalesRank')
         if not ranktag:
             return
@@ -237,7 +379,35 @@ def processSalesRankResults(xml):
         salesRank.rank = ranktag.Rank.string
         salesRank.rank_date = timezone.now()
         salesRank.save()
+        book.get_bookscore().update_rolling_salesrank()
         book.get_bookscore().check_for_alert()
+        
+def remove_excess_books():
+    print ("Removing books that don't meet minimum standards...")
+    ## No sales rank
+    #books = Book.objects.filter(salesrank__rank_date__gte=sales_rank_date).annotate(num_sr=Count('salesrank')).filter(num_sr=0).annotate(num_ib=Count('inventorybook')).filter(num_ib=0)
+    #print('No Sales Rank: ' + str(books.count()))
+    #books.delete()
+
+    ## Low sales rank
+    #books = Book.objects.filter(salesrank__rank_date__gte=sales_rank_date).annotate(min_sr=Min('salesrank__rank')).filter(min_sr__gte=settings.worst_sales_rank).annotate(num_ib=Count('inventorybook')).filter(num_ib=0)
+    #print('Low Sales Rank: ' + str(books.count()))
+    #books.delete()
+    
+    # Low price
+    return
+    while True:
+        books = Book.objects.filter(price__price_date__gte=sales_rank_date).annotate(max_pr=Max('price__price'))\
+            .filter(max_pr__lte=settings.lowest_high_price).annotate(num_ib=Count('inventorybook'))\
+            .filter(num_ib=0)[:1000]
+        print('Low Price: ' + str(len(books)))
+        if books:
+            with transaction.atomic():
+                for book in books:
+                    book.delete()
+        else:
+            break
+   
     
 def main(argv):
    action = ''
@@ -251,6 +421,7 @@ def main(argv):
       print ('   Available actions:')
       print ('      track-prices - get updated prices  ')
       print ('      chase-lowest-price - keep prices low on listed books with LOW strategy')
+      print ('      metadata-scan - reload and store metadata ')
 
       sys.exit(2)
    for opt, arg in opts:
@@ -264,6 +435,10 @@ def main(argv):
        chase_lowest_prices()
    if (action == 'track-prices' or action == ''):
        track_book_prices()
+   if (action == 'metadata-scan' ):
+       track_book_metadata()
+   if (action == 'clean-books' ):
+       data_cleanup.clean_books()
 
    
    #print 'Input file is "', inputfile
@@ -271,7 +446,9 @@ def main(argv):
 
 if __name__ == "__main__":
     #scanCamelBooks()
-   main(sys.argv[1:])
-#if __name__ == "__main__":
-#    chase_lowest_prices()
-#    track_book_prices()
+    main(sys.argv[1:])
+    print("Track books activity completed.")
+    exit
+    print('Inventory')
+    #data_cleanup.clean_book_by_asin('1118358538')
+    

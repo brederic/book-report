@@ -31,14 +31,14 @@ class PriceInline(admin.TabularInline):
         """Alter the queryset to return no existing entries"""
         # get the existing query set, then empty it.
         qs = super(PriceInline, self).get_queryset(request)
-        return qs.none()  
+        return qs.none()
 
 class BookAdmin(admin.ModelAdmin):
     fieldsets = [
-            (None,               {'fields': ['title','asin', 'isbn13', 'newReview', 'usedReview', 'watch', 'ignore', 'speculative', 'high_sale_price_updated']}),
+            (None,               {'fields': ['title','asin', 'isbn13', 'newReview', 'usedReview', 'is_current_edition', 'is_previous_edition', 'new_edition_date', 'high_sale_price_new', 'current_price_new','high_sale_price_used', 'current_price_used', 'amazon_link','watch', 'ignore', 'speculative', 'high_sale_price_updated']}),
         ('Details', {'fields': ['author', 'binding'], 'classes': ['collapse']}),
     ]
-
+    readonly_fields = ['is_current_edition','is_previous_edition','new_edition_date','high_sale_price_new','high_sale_price_used', 'current_price_new', 'current_price_used', 'amazon_link']
         
     def get_score(self, obj):
         #return obj.bookscore__score
@@ -48,9 +48,9 @@ class BookAdmin(admin.ModelAdmin):
         return Decimal('0.99')
         
     inlines = [InventoryBookInline, PriceInline]
-    list_display = ('title', 'get_score', 'asin', 'track')
+    list_display = ('title', 'get_score', 'asin', 'track', 'is_current_edition','new_edition_date')
     search_fields = ['asin', 'title', 'isbn']
-    list_filter = ['track', 'newReview','usedReview', 'watch']
+    list_filter = ['track', 'newReview','usedReview', 'watch', 'high_sale_price_updated']
     #title.admin_order_field='book__title'
     get_score.admin_order_field = 'bookscore__rolling_salesrank_score'
     get_score.short_description = 'Score'
@@ -69,14 +69,17 @@ class BookAdmin(admin.ModelAdmin):
 admin.site.register(Book, BookAdmin)
 class InventoryBookAdmin(admin.ModelAdmin):
     actions = ['list_books', 'hold_high', 'chase_lowest_price', 'thirty_day_drop', 'donate']
-    def get_high_sale_date(self, obj):
-        #return obj.bookscore__score
-        score = obj.book.get_bookscore().getPriceScore(obj.list_condition)
-        if score and score.highest_sold_price:
-            return score.highest_sold_price.price_date
-        return None
-    get_high_sale_date.admin_order_field = 'book__bookscore__pricescore__highest_sold_price__price_date'
-    get_high_sale_date.short_description = 'Peak Date'
+    search_fields = [ 'book__title',  'id']
+
+
+    #def get_high_sale_date(self, obj):
+    #    #return obj.bookscore__score
+    #    score = obj.book.get_bookscore().getPriceScore(obj.list_condition)
+    #    if score and score.highest_sold_price:
+    #        return score.highest_sold_price.price_date
+    #    return None
+    #get_high_sale_date.admin_order_field = 'book__bookscore__pricescore__highest_sold_price__price_date'
+    #get_high_sale_date.short_description = 'Peak Date'
 
     def list_books(self, request, queryset):
         errors = ''
@@ -88,7 +91,7 @@ class InventoryBookAdmin(admin.ModelAdmin):
         if not errors == '':
             self.message_user(request, 'Listing Errors:\n' + errors, message_constants.ERROR)
             return
-        rows_updated = states.list_books(queryset)
+        rows_updated = queryset.update(needs_listed = True)
         if rows_updated == 1:
             message_bit = "1 book was"
         else:
@@ -124,7 +127,12 @@ class InventoryBookAdmin(admin.ModelAdmin):
         if not errors == '':
             self.message_user(request, 'Listing Errors:\n' + errors, message_constants.ERROR)
             return
-        rows_updated = queryset.update(listing_strategy='LOW')
+        rows_updated = queryset.update(listing_strategy='LOW', needs_listed = True)
+        for book in queryset:
+            try:
+                book.prepare_for_listing()
+            except InputError as e:
+                errors= errors +'\n['+  book.book.title + ' : ' + e.message+ ']'
         if rows_updated == 1:
             message_bit = "1 book was"
         else:
@@ -142,7 +150,12 @@ class InventoryBookAdmin(admin.ModelAdmin):
         if not errors == '':
             self.message_user(request, 'Listing Errors:\n' + errors, message_constants.ERROR)
             return
-        rows_updated = queryset.update(listing_strategy='30D')
+        rows_updated = queryset.update(listing_strategy='30D', needs_listed = True)
+        for book in queryset:
+            try:
+                book.prepare_for_listing()
+            except InputError as e:
+                errors= errors +'\n['+  book.book.title + ' : ' + e.message+ ']'
         if rows_updated == 1:
             message_bit = "1 book was"
         else:
@@ -161,7 +174,12 @@ class InventoryBookAdmin(admin.ModelAdmin):
         if not errors == '':
             self.message_user(request, 'Listing Errors:\n' + errors, message_constants.ERROR)
             return
-        rows_updated = queryset.update(listing_strategy='HHI', original_ask_price = F('purchase_price') * settings.hold_high_multiple, last_ask_price= F('purchase_price') * settings.hold_high_multiple)
+        rows_updated = queryset.update(listing_strategy='HHI', needs_listed = True)
+        for book in queryset:
+            try:
+                book.prepare_for_listing()
+            except InputError as e:
+                errors= errors +'\n['+  book.book.title + ' : ' + e.message+ ']'
         if rows_updated == 1:
             message_bit = "1 book was"
         else:
@@ -179,7 +197,7 @@ class InventoryBookAdmin(admin.ModelAdmin):
         ('Sell', {'fields': ['sale_date', 'last_ask_price', 'sale_price'], 
         'classes': ['collapse']}),
     ]
-    list_display = ('book', 'purchase_condition', 'list_condition', 'status', 'listing_strategy', 'get_high_sale_date', 'request_date', 'list_date')
+    list_display = ('book', 'purchase_condition', 'list_condition', 'status', 'listing_strategy',  'request_date', 'list_date', 'sale_date')
     list_filter = ['status', 'listing_strategy', 'source']
     readonly_fields = ['book_link']
     
@@ -201,7 +219,7 @@ admin.site.register(SalesRank, SalesRankAdmin)
 
 class FeedLogAdmin(admin.ModelAdmin):
     list_display = ['feed_type', 'status', 'status_time']
-    #search_fields = ['book.asin', 'book.title']
+    search_fields = ['amazon_feed_id']
     list_filter = ['status', 'needs_attention']
 
 admin.site.register(FeedLog, FeedLogAdmin)

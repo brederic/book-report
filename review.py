@@ -95,18 +95,27 @@ def score_books():
         
 
 def find_tracked_books():
-    #Book.objects.all().update(track=False, newReview=False, usedReview=False)
+    
     settings.refresh_from_db()
     #settings.is_scoring_books = False
     if not settings.is_scoring_books:
+                
         settings.last_book_score_run = timezone.now()
         settings.is_scoring_books = True
         settings.save()
         
+        # Clear flags
+        Book.objects.all().update(track=False, newReview=False, usedReview=False)
+        # Track inventory books
+        Book.objects.filter(inventorybook__request_date__gte=sales_rank_date).update(track=True)
+
+        
         track_books.track_book_prices()
         #score_books()
         find_review_books()
-        #scoreListedBooks()    
+        #scoreListedBooks()  
+        track_books.remove_excess_books()
+          
         
         settings.refresh_from_db()
         settings.is_scoring_books = False

@@ -74,10 +74,23 @@ class Settings(models.Model):
     target_discount = models.DecimalField(max_digits=4, decimal_places=2, default='0.10')
     # this is the rolling salerank score a book must have to trigger an email alert
     target_salesrank_score = models.DecimalField(max_digits=4, decimal_places=2, default='0.15')
+    # this is the most we want to pay for a new book
+    max_new_purchase_price = models.DecimalField(max_digits=10, decimal_places=2, default='20.00')
+    # this is the most we want to pay for a used book
+    max_used_purchase_price = models.DecimalField(max_digits=10, decimal_places=2, default='8.00')
+    # if a newer edition came out prior to this date, we don't want a used book of the old edition
+    oldest_expiration_used = models.DateField(null=True, blank=True, default='2016-01-01')
+    
     # multiple of purchase price necessary to sell while holding high
     hold_high_multiple = models.IntegerField(default=8)
     # multiple of purchase price which is the minimum price to which chase low price will go
     chase_low_floor_multiple = models.DecimalField(max_digits=4, decimal_places=2, default='1.50')
+    # the minimum price to which chase low price will go
+    chase_low_floor_price = models.DecimalField(max_digits=4, decimal_places=2, default='5.50')
+    # true if chase low price books should have their prices lowered at least once a day
+    chase_low_closeout = models.BooleanField(default=True)
+    # when chase_low books are on closeout, the amount the price should be lowered each day if the price has not been automatically lowered to match the competition 
+    closeout_daily_discount = models.DecimalField(max_digits=4, decimal_places=2, default='0.10')
     high_price_ideal = models.DecimalField(max_digits=10, decimal_places=2, default='150.00')
     # this is the datetime of the most recent order report
     last_order_report = models.DateTimeField(null=True, default='2015-07-15')
@@ -91,7 +104,9 @@ class Settings(models.Model):
     review_item_count = models.IntegerField(default=8)
     # lowest total buy score to mark for review
     review_buy_score_floor = models.DecimalField(max_digits=4, decimal_places=2, default='0.75')
-    
+    # this is the datetime of the most recent run of the reconcile script
+    last_reconcile_run = models.DateTimeField(null=True, default='2015-07-15')
+
     
 
 class Book(models.Model):
@@ -102,14 +117,93 @@ class Book(models.Model):
     binding = models.CharField(max_length=15, blank=True)
     author = models.CharField(max_length=50, blank=True)
     imageLink = models.CharField(max_length=100, blank=True)
+    mediumImageLink = models.CharField(max_length=100, blank=True)
+    largeImageLink = models.CharField(max_length=100, blank=True)
+    edition = models.CharField(max_length=30, blank=True)
     publicationDate = models.DateField(null=True, blank=True)
     watch = models.BooleanField(default=False, db_index=True)
     ignore = models.BooleanField(default=False, db_index=True)
     speculative = models.BooleanField(default=False, db_index=True)
     high_sale_price_updated = models.BooleanField(default=False, db_index=True)
+    process_now = models.BooleanField(default=False, db_index=True)
     track = models.BooleanField(default=False, db_index=True)
     newReview = models.BooleanField(default=False, db_index=True)
     usedReview = models.BooleanField(default=False, db_index=True)
+    current_edition = models.ForeignKey('self', null=True, db_index=True, on_delete=models.SET_NULL)
+    previous_edition = models.BooleanField(default=False, db_index=True)
+    description = models.TextField(blank=True)
+    page_count = models.IntegerField(null=True)
+    
+    
+    def amazon_link(self):
+      return '<a href="http://smile.amazon.com/dp/%s" target="_blank">Buy on Amazon</a>' %   escape(self.asin) 
+
+    amazon_link.allow_tags = True
+    amazon_link.short_description = "Amazon" 
+    
+    
+    def new_edition_date (self):
+        self.previous_edition = False
+        self.save()
+        if self.current_edition:
+            if not self.current_edition.publicationDate or not self.publicationDate:
+                return None            
+            if self.current_edition.publicationDate > self.publicationDate:
+                # there is a new edition, see if any other editions come between us and it
+                books = Book.objects.filter(current_edition=self.current_edition).order_by('-publicationDate')
+                if self.publicationDate == books[0].publicationDate:
+                    self.previous_edition = True
+                    self.save()
+                    return self.current_edition.publicationDate
+                else: # keep looking for self in list
+                    previous_edition = None
+                    for item in books:
+                        if self == item:
+                            break
+                        else:
+                            if item.publicationDate > self.publicationDate:
+                                previous_edition = item
+                    return previous_edition.publicationDate
+        return None
+     
+    def high_sale_price_new (self):
+        if self.get_bookscore().getPriceScore('5').highest_sold_price:
+            return str(self.get_bookscore().getPriceScore('5').highest_sold_price)
+        return None
+    def high_sale_price_used (self):
+        if self.get_bookscore().getPriceScore('1').highest_sold_price:
+            return str(self.get_bookscore().getPriceScore('1').highest_sold_price)
+        return None
+             
+    def current_price_new (self):
+        if self.get_bookscore().getPriceScore('5').most_recent_price:
+            return str(self.get_bookscore().getPriceScore('5').most_recent_price)
+        return None
+    def current_price_used (self):
+        if self.get_bookscore().getPriceScore('0').most_recent_price:
+            return str(self.get_bookscore().getPriceScore('0').most_recent_price)
+        return None
+        
+    def is_current_edition (self):
+        if self.current_edition:
+            if self.current_edition.publicationDate and self.publicationDate:
+                if self.current_edition.publicationDate <= self.publicationDate:
+                    # this is the current edition
+                    return True
+        
+        return False
+        
+        
+    def is_previous_edition (self):
+        if self.previous_edition == None:
+            new_edition_date()
+        self.refresh_from_db()
+        return self.previous_edition
+        
+        
+    new_edition_date.short_description = "Expiry Date"
+    high_sale_price_new.short_description = "High New $"
+    high_sale_price_used.short_description = "High Used $"
     
     def __str__(self):             
         return self.title
@@ -156,7 +250,7 @@ class InventoryBook(models.Model):
     ('LOW', 'Chase Lowest Price'),
     ('HHI', 'Hold High'),
     )
-    book = models.ForeignKey(Book, db_index=True)
+    book = models.ForeignKey(Book, db_index=True,blank=True, null=True)
     source = models.CharField(max_length=3, choices=SOURCE_CHOICES,db_index=True)
     status = models.CharField(max_length=2, choices=STATUS_CHOICES,db_index=True, default='RQ')
     #inventory = models.IntegerField(blank=True, default=1)
@@ -173,6 +267,7 @@ class InventoryBook(models.Model):
     sale_date = models.DateField(null=True, blank=True)
     last_ask_price = models.DecimalField(max_digits=7, decimal_places=2, null=True,blank=True)
     sale_price = models.DecimalField(max_digits=7, decimal_places=2, null=True,blank=True)
+    needs_listed = models.BooleanField(default=False, db_index=True)
     def book_link(self):
       return '<a href="%s">%s [%s]</a>' % (reverse("admin:books_book_change", args=(self.book.id,)) , escape(self.book) , self.book.isbn13)
 
@@ -195,6 +290,10 @@ class InventoryBook(models.Model):
                 self.listing_strategy = '30D'
         if self.listing_strategy == 'HHI':
             self.original_ask_price = self.purchase_price * settings.hold_high_multiple
+            # if highest_sold_price is higher, use that
+            if self.book.get_bookscore().getPriceScore(self.list_condition).highest_sold_price:
+                if self.book.get_bookscore().getPriceScore(self.list_condition).highest_sold_price.price > self.original_ask_price:
+                    self.original_ask_price = self.book.get_bookscore().getPriceScore(self.list_condition).highest_sold_price.price
             self.last_ask_price = self.original_ask_price
         elif self.original_ask_price == None:
             raise InputError(message='Missing ask price')        
@@ -203,6 +302,18 @@ class InventoryBook(models.Model):
         self.list_date = datetime.date.today()
         self.save()
         return True
+    
+    def change_listing_strategy(self, strategy):
+        if strategy == '30D' or strategy == 'LOW' or strategy == 'HHI':
+            self.listing_strategy = strategy
+            self.prepare_for_listing()
+            self.needs_listed = True
+            self.save()
+        
+        
+    def delete(self, *args, **kwargs):
+        raise RuntimeError('InventoryBook should never be deleted!')
+
 
     def prepare_for_donating(self):
         settings = Settings.objects.all()[0]
@@ -216,16 +327,25 @@ class InventoryBook(models.Model):
         except:
             return False
             
-    def __str__(self):             
-        return self.book.title + ' [' + self.source + ']'   
+    def __str__(self):       
+        if self.book and self.book.title:     
+            return self.book.title + ' [' + self.source + ']'   
+        else:     
+            return str(self.id) + ' [' + self.source + ']'   
 
 class Price(models.Model):
-    book = models.ForeignKey(Book, db_index=True)
+    book = models.ForeignKey(Book, db_index=True, blank=True, null=True)
     price_date = models.DateTimeField( db_index=True) 
     condition = models.CharField(max_length=1, choices=CONDITION_CHOICES,db_index=True)
     price = models.DecimalField(max_digits=11, decimal_places=2, db_index=True)
+    description = models.CharField(max_length=100, blank=True)
     most_recent = models.BooleanField(default=False)
     next_price_higher = models.BooleanField(default=False, db_index=True)
+    good_price = models.DecimalField(max_digits=11, null=True,blank=True, decimal_places=2)
+    good_description = models.CharField(max_length=100, blank=True)
+    
+    class Meta:
+        index_together = [['price_date', 'price', 'book']]
     
     def get_next(self):
         next = Price.objects.filter(price_date__gt=self.price_date, book=self.book, condition = self.condition).order_by('price_date')
@@ -257,27 +377,31 @@ class Price(models.Model):
                 prev.save()
                 if prev.price >= settings.lowest_high_price:
                     # check to see if this is new high price sold
-                    score = self.book.get_bookscore()
-                    score.check_sold_price(prev)
+                    if self.book:
+                        score = self.book.get_bookscore()
+                        score.check_sold_price(prev)
                     
                     
         # check if price is low enough to review for purchase
-        score = self.book.get_bookscore()
-        score.update_current_price(self)
-          
+        if self.book:
+            score = self.book.get_bookscore()
+            score.update_current_price(self)
+              
                     
 
 
     def __str__(self):             
-        return self.book.title + ' [$' + str(self.price) + ' ' + self.condition +' ' + self.price_date.strftime('%x')+']'  
+        return self.book.title + ' [$' + str(self.price) + ' ' + self.condition +' ' + self.price_date.strftime('%x')+ " $"+ str(self.good_price)+']'  
             
 class SalesRank(models.Model):
-    book = models.ForeignKey(Book, db_index=True)
+    book = models.ForeignKey(Book, db_index=True, blank=True, null=True)
     rank_date = models.DateTimeField(db_index=True) 
     rank = models.IntegerField(db_index=True)
     most_recent = models.BooleanField(default=False)
     def __str__(self):             
-        return self.book.title + ' [' + str(self.rank) + ']'  
+        return self.book.title + ' [' + str(self.pk) + ", " +str(self.rank) + ", " + str(self.rank_date)+']'  
+    class Meta:
+        index_together = [['rank_date', 'rank', 'book']]
     
 
            
@@ -330,21 +454,37 @@ class BookScore(models.Model):
         #self.check_for_alert()
         
     def check_for_alert(self):
+        #print("check_for_alert: " + str(self))
         settings = Settings.objects.all()[0]
         newTarget= False
         usedTarget = False
+        
         if not settings.send_alerts:
             return
 
         if self.rolling_salesrank_score< settings.target_salesrank_score: 
+            newPriceScore = self.getPriceScore('5')
+            usedPriceScore = self.getPriceScore('0')
             print('yes')
-            if self.getPriceScore('5').get_current_price_score()<settings.target_discount:
-                print('new')
-                newTarget= True
-            if self.getPriceScore('0').get_current_price_score()<settings.target_discount:
-                usedTarget = True
-                print('used')
+            # To give an alert on a new book it has to be below the discount threshold AND the minimum new price
+            if newPriceScore.get_current_price_score()<settings.target_discount and newPriceScore.most_recent_price.price <= settings.max_new_purchase_price:
+                # It has to be a current or previous edition
+                if self.book.is_current_edition() or self.book.is_previous_edition():
+                    print('new')
+                    newTarget= True
+            if usedPriceScore.get_current_price_score() and usedPriceScore.get_current_price_score()<settings.target_discount and usedPriceScore.most_recent_price.good_price<= settings.max_used_purchase_price:
+                #usedTarget = True
+                # It has to be a current edition or be the previous edition and have a recent expiration date
+                if self.book.is_current_edition():
+                    usedTarget = True
+                if not self.book.new_edition_date() == None:
+                    if self.book.is_previous_edition and self.book.new_edition_date() > settings.oldest_expiration_used:
+                        usedTarget = True
+                        print('used')
             if newTarget or usedTarget:
+                if self.rolling_salesrank_score > 0.5:
+                    self.book.speculative = True
+                    self.book.save() 
                 # if we have this book requested already, don't report it
                 ib = InventoryBook.objects.filter(book=self.book, status='RQ')
                 if ib:
@@ -369,7 +509,7 @@ class BookScore(models.Model):
                 msg += 'Camel: http://camelcamelcamel.com/product/'+ self.book.asin + '\n'
                 msg += 'Book Report: http://107.155.87.176:8000/admin/books/book/'+ str(self.book.id) + '\n'
                 msg += 'Price alert New: ' + str(newTarget) + ' Used: ' + str(usedTarget)
-                mail.sendEmail('Check out this book', msg)
+                mail.send_check_book('Check out this book: ' + self.book.title, msg)
             else:
                 print('no')
                 
@@ -378,6 +518,7 @@ class PriceScore(models.Model):
     bookscore = models.ForeignKey(BookScore, null=True, db_index=True)
     condition = models.CharField(max_length=1, choices=CONDITION_CHOICES,db_index=True)
     highest_sold_price = models.ForeignKey(Price, null=True, db_index=True)
+    most_recent_price = models.ForeignKey(Price, null=True, db_index=True, related_name='score')
     low_buy_price_trigger = models.BooleanField(default=False, db_index=True)
     max_price_score = models.FloatField( blank=True, default=0.00)
     current_price_score = models.FloatField(blank=True, default=0.00)
@@ -385,7 +526,12 @@ class PriceScore(models.Model):
     off_recent_low_score = models.FloatField( blank=True, default=0.00)
     total_buy_score = models.FloatField( default=0.00, db_index=True)
     off_recent_high_score  = models.FloatField( blank=True, default=0.00)
-    total_sell_score  = models.FloatField(blank=True, default=0.00, db_index=True)  
+    total_sell_score  = models.FloatField(blank=True, default=0.00, db_index=True)
+    highest_sold_price_last_season = models.ForeignKey(Price, null=True, db_index=True, related_name='high_last_season')
+    highest_sold_price_last_year = models.ForeignKey(Price, null=True, db_index=True, related_name='high_last_year')
+    lowest_offer_since_last_season = models.ForeignKey(Price, null=True, db_index=True, related_name='low_last_season')
+    lowest_offer_last_year = models.ForeignKey(Price, null=True, db_index=True, related_name='low_last_year')
+    highest_sold_price_this_season = models.ForeignKey(Price, null=True, db_index=True, related_name='high_this_season')
     
     def check_sold_price(self, price):
         if self.highest_sold_price:
@@ -405,6 +551,8 @@ class PriceScore(models.Model):
         
     def update_current_price(self, price):
         settings = Settings.objects.all()[0]
+        self.most_recent_price = price
+        self.save()
 
         if self.highest_sold_price:
             #calculate current price score
@@ -418,8 +566,7 @@ class PriceScore(models.Model):
                 else:
                     price.book.usedReview = True
                     price.book.save()
-                # also update rolling sales rank score
-                self.bookscore.update_rolling_salesrank()
+
 
 
 class FeedLog(models.Model):

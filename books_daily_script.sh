@@ -11,3 +11,6 @@ cd ../book_report
 
 python -u price-drop.py  >> price-drop.log 2>&1 &
 
+python -u daily_charts.py  >> charts.log 2>&1 &
+
+
