@@ -321,6 +321,12 @@ class InventoryBook(models.Model):
             raise InputError(message='Only listed book can be donated')
         return True
 
+    def prepare_for_cancelling(self):
+        settings = Settings.objects.all()[0]
+        if not ( self.status == 'RQ'):
+            raise InputError(message='Only a requested book can be donated')
+        return True
+
     def is_list_ready(self):
         try:
             return self.prepare_for_listing(self)

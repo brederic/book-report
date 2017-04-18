@@ -32,6 +32,12 @@ def donate_books(queryset):
     
     return queryset.update(status='DN')
 
+
+
+def cancel_books(queryset):
+    
+    return queryset.update(status='CN', purchase_price='0')
+
 if __name__ == "__main__":
         
     for book in Book.objects.filter(inventorybook__status='RQ', isbn=''):

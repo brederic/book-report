@@ -68,7 +68,7 @@ class BookAdmin(admin.ModelAdmin):
     
 admin.site.register(Book, BookAdmin)
 class InventoryBookAdmin(admin.ModelAdmin):
-    actions = ['list_books', 'hold_high', 'chase_lowest_price', 'thirty_day_drop', 'donate']
+    actions = ['list_books', 'hold_high', 'chase_lowest_price', 'thirty_day_drop', 'donate', 'cancel']
     search_fields = [ 'book__title',  'id']
 
 
@@ -115,6 +115,24 @@ class InventoryBookAdmin(admin.ModelAdmin):
         else:
             message_bit = "%s books were" % rows_updated
         self.message_user(request, "%s successfully donated." % message_bit)
+    donate.short_description = "Donate the selected books"    
+    
+    def cancel(self, request, queryset):
+        errors = ''
+        for book in queryset:
+            try:
+                book.prepare_for_cancelling()
+            except InputError as e:
+                errors= errors +'\n['+  book.book.title + ' : ' + e.message+ ']'
+        if not errors == '':
+            self.message_user(request, 'Cancelling Errors:\n' + errors, message_constants.ERROR)
+            return
+        rows_updated = states.cancel_books(queryset)
+        if rows_updated == 1:
+            message_bit = "1 book was"
+        else:
+            message_bit = "%s books were" % rows_updated
+        self.message_user(request, "%s successfully cancelled." % message_bit)
     donate.short_description = "Donate the selected books"
 
     def chase_lowest_price (self, request, queryset):
