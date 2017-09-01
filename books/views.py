@@ -5,7 +5,7 @@ from django.db.models import Q, Max, Count, F
 from django.core.urlresolvers import reverse
 import search
 
-import states
+import states, aws_config
 
 from .models import Book, InventoryBook, Price, BookScore, SalesRank
 
@@ -131,6 +131,7 @@ def compare(request, book_id):
         'previous_price': previous_price,
         'current_price_used': current_price_used,
         'previous_price_used': previous_price_used,
+        'affiliate': aws_config.AWS_USER,
     })
     return render(request, 'books/compare.html', context)
     

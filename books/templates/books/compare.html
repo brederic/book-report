@@ -15,9 +15,9 @@ WhichEdition Header - {{ current_book.title }}</header>
 <main class="current"> 
     <section>
         {% if current_book %}
-        <a href="http://amazon.com/dp/{{current_book.asin}}"><h1>Current Edition - ${{ current_price.price }}</h1></a>
+        <a href="http://amazon.com/dp/{{current_book.asin}}?tag={{ affiliate }}"><h1>Current Edition - ${{ current_price.price }}</h1></a>
         <figure>
-          <a href="http://amazon.com/dp/{{current_book.asin}}"><img src="
+          <a href="http://amazon.com/dp/{{current_book.asin}}?tag={{ affiliate }}"><img src="
             {% if current_book.largeImageLink %}
                 {{ current_book.largeImageLink }}
             {% else %}
@@ -30,9 +30,9 @@ WhichEdition Header - {{ current_book.title }}</header>
             " alt="{{ current_book.title }}" ></a>
           <figcaption>{{ current_book.title }} (Edition: {{current_book.edition}})</figcaption>
         </figure> 
-        <div><a href="http://amazon.com/dp/{{current_book.asin}}">View on Amazon</a></div>
+        <div><a href="http://amazon.com/dp/{{current_book.asin}}?tag={{ affiliate }}">View on Amazon</a></div>
         {% if current_book.process_now %}
-            Price data is currently updating.
+            Price data is currently updating.?tag={{ affiliate }}
         {% else %}
             <form method="post" action="{% url 'books:update' current_book.id %}">
                 {% csrf_token %}
@@ -59,12 +59,12 @@ WhichEdition Header - {{ current_book.title }}</header>
 <aside class="previous">
     <section>
         {% if previous_book %}
-            <a href="http://amazon.com/dp/{{previous_book.asin}}"><h1>Previous Edition - ${{ previous_price.price }}</h1></a>
+            <a href="http://amazon.com/dp/{{previous_book.asin}}?tag={{ affiliate }}"><h1>Previous Edition - ${{ previous_price.price }}</h1></a>
             <figure>
-              <a href="http://amazon.com/dp/{{previous_book.asin}}"><img src="{{ previous_book.largeImageLink }}" alt="{{ previous_book.title }}" ></a>
+              <a href="http://amazon.com/dp/{{previous_book.asin}}?tag={{ affiliate }}"><img src="{{ previous_book.largeImageLink }}" alt="{{ previous_book.title }}" ></a>
               <figcaption>{{ previous_book.title }} (Edition: {{previous_book.edition}})</figcaption>
             </figure> 
-            <div><a href="http://amazon.com/dp/{{previous_book.asin}}">View on Amazon</a></div>
+            <div><a href="http://amazon.com/dp/{{previous_book.asin}}?tag={{ affiliate }}">View on Amazon</a></div>
             {% if previous_book.process_now %}
                 Price data is currently updating.
             {% else %}
