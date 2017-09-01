@@ -278,13 +278,13 @@ def report_high_sale_price():
 
 def monthly_report():
   year = 2017
-  for month in range(3,4):
+  for month in range(5,6):
     # Purchases
-    target_date_start = timezone.datetime(year,month,1) 
+    target_date_start = timezone.datetime(year,month,1)
     if not month == 12:
-        target_date_end = timezone.datetime(year,month+1,1) 
+        target_date_end = timezone.datetime(year,month+1,1)
     else: # December
-        target_date_end = timezone.datetime(year+1,1,1) 
+        target_date_end = timezone.datetime(year+1,1,1)
     print ('Report for '+str(year)+'-'+str(month))
     books = InventoryBook.objects.all().filter(request_date__lt=target_date_end, request_date__gte=target_date_start)
     total_coi = 0
@@ -293,7 +293,7 @@ def monthly_report():
         #print(book.book.title + ' Cost: $' + str(book.purchase_price))
         if book.purchase_price:
             total_coi += book.purchase_price
-        
+
     print ('Spent $' +str(total_coi) + ' for ' + str(books.count())+ ' books.')
     #print ('Total ask: $' +str(total_ask) + ' for ' + str(books.count())+ ' books.')
     #print ('Avg sale price: $' +str(sold_books['ave_sale_price']) + ' Est. $ ' + str(books.count()*sold_books['ave_sale_price'])+ '.')
@@ -305,7 +305,7 @@ def monthly_report():
         if book.sale_price:
             total_ask += book.sale_price - (book.sale_price*Decimal('0.15')) - Decimal('2.34') #fees
             total_coi += book.purchase_price
-        
+
     print ('Received $' +str(total_ask) + ' for ' + str(books.count())+ ' books,  earning $' + str(total_ask-total_coi))
 
 def check_review_data():
@@ -346,11 +346,18 @@ def check_current_editions():
         print(book.publicationDate)
         print(book.current_edition.asin)
         print(book.current_edition.publicationDate)
-        
+
+
+def trigger_price_feed():
+    books = InventoryBook.objects.all().filter(source='AMZ', status='LT')
+    books.update(last_ask_price=F('original_ask_price'))
+
 def gen_sales_data():
-    books=InventoryBook.objects.all().filter(source='AMZ').exclude(status='RQ').exclude(status='CN').exclude(status='DN')
-    print (str(len(books)) + ' records')
+    books = InventoryBook.objects.all().filter(source='AMZ').exclude(status='RQ').exclude(status='CN').exclude(
+        status='DN')
+    print(str(len(books)) + ' records')
     for book in books:
+
         if book.list_condition == '5':
             condition = '5'
         else:
@@ -543,3 +550,4 @@ monthly_report()
 #list_descriptions()
 #repopulate_book_prices('013285337X')
 #aggregate_book_prices()
+#trigger_price_feed()
