@@ -1,0 +1,21 @@
+{% load staticfiles %}
+<div class='container'>
+    <div class='row'>
+        <div class='col'>
+                <a href='/'><img id='banner' src="{% static "books/we_banner.png" %}" alt="WHICH EDITION"/></a>
+        </div>
+    </div>
+    <div class='row'>
+        <div class='col'><form method="get" action="/books/search">
+        
+              
+
+    <label for="id_q">Search:</label>
+               <input type="text" name="q" id="id_q" value="{{ query_string }}"/>
+               <input type="submit" value="Submit"/>
+
+
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,12 @@
+{% extends "books/__base.html" %}
+
+{% block content %}
+    <div class="row">
+        <div class="col">
+            {% block main_col %}{% endblock %}
+        </div>
+        <div class="col">
+            {% block side_col %}{% endblock %}
+        </div>
+    </div>
+{% endblock %}

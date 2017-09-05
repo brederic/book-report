@@ -76,6 +76,16 @@ WSGI_APPLICATION = 'book_report.wsgi.application'
 # https://docs.djangoproject.com/en/1.8/ref/settings/#databases
 
 DATABASES = {
+    'prod': {
+#   'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'brent_books',
+        'USER': 'brent_bookuser',
+        'PASSWORD': 'b00k5!b00k5!',
+        'HOST': 'daldb.vpsdime.com',
+        'PORT': '',
+    },
+#    'test': {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'books',
@@ -84,14 +94,7 @@ DATABASES = {
         'HOST': 'localhost',
         'PORT': '',
     },
-    'old': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'brent_books',
-        'USER': 'brent_bookuser',
-        'PASSWORD': 'b00k5!b00k5!',
-        'HOST': 'daldb.vpsdime.com',
-        'PORT': '',
-    }
+
 }
 
 

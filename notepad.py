@@ -472,6 +472,33 @@ def prepare_clean_books(db):
     Book.objects.using(db).all().update(high_sale_price_updated=False)
     
     
+def count_tables ():
+    books = Book.objects.using('default').all().values_list('id', flat=True)
+    print ("Test books:" +str(len(books)))
+    books = Book.objects.using('old').all().values_list('id', flat=True)
+    print ("Prod books:" +str(len(books)))
+    
+    books = InventoryBook.objects.using('default').all().values_list('id', flat=True)
+    print ("Test books:" +str(len(books)))
+    books = InventoryBook.objects.using('old').all().values_list('id', flat=True)
+    print ("Prod books:" +str(len(books)))
+    
+    books = Price.objects.using('default').values_list('id', flat=True)
+    print ("Test prices:" +str(len(books)))
+    books = Price.objects.using('old').values_list('id', flat=True)
+    print ("Prod prices:" +str(len(books)))
+        
+    books = BookScore.objects.using('default').values_list('id', flat=True)
+    print ("Test BookScore:" +str(len(books)))
+    books = BookScore.objects.using('old').values_list('id', flat=True)
+    print ("Prod BookScore:" +str(len(books)))
+        
+    books = FeedLog.objects.using('default').values_list('id', flat=True)
+    print ("Test FeedLog:" +str(len(books)))
+    books = FeedLog.objects.using('old').values_list('id', flat=True)
+    print ("Prod FeedLog:" +str(len(books)))
+
+    
 def count_cleaned_books(db):
     books = Book.objects.using(db).all().filter(track=True)
     print ("Tracked " +str(len(books)))
@@ -531,7 +558,7 @@ def aggregate_book_prices():
 #check_review_data()
 #clean_track()
 #test_check_for_alert()
-monthly_report()
+#monthly_report()
 #cost_of_inventory()
 #report_high_sale_price()
 #add_isbn13()
@@ -551,3 +578,4 @@ monthly_report()
 #repopulate_book_prices('013285337X')
 #aggregate_book_prices()
 #trigger_price_feed()
+count_tables()

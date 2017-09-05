@@ -1,88 +1,17 @@
-{% load staticfiles %}
+{% extends "books/__l_50_50.html" %}
 
-<link rel="stylesheet" type="text/css" href="{% static 'books/style.css' %}" />
-<header><img id='banner' src="{% static "books/we_banner.png" %}" alt="WHICH EDITION"/>
-WhichEdition Header - {{ current_book.title }}</header>
-<nav><form method="get" action="/books/search">
-          
+{% block title %}{{ current_book.title }} | {{ block.super }}{% endblock %}
 
-<label for="id_q">Search:</label>
-           <input type="text" name="q" id="id_q" value="{{ query_string }}"/>
-           <input type="submit" value="Submit"/>
+{% block main_col %}
+    {% include "books/_book_compare.html" with book=current_book edition_type='Current' price_new=current_price price_used=current_price_used %}
+{% endblock %}
+
+{% block side_col %}
+    {{ previous_book.current_price.price }}
+    {% include "books/_book_compare.html" with book=previous_book edition_type='Previous' price_new=previous_price price_used=previous_price_used %}
+{% endblock %}
 
 
-        </form></nav>
-<main class="current"> 
-    <section>
-        {% if current_book %}
-        <a href="http://amazon.com/dp/{{current_book.asin}}?tag={{ affiliate }}"><h1>Current Edition - ${{ current_price.price }}</h1></a>
-        <figure>
-          <a href="http://amazon.com/dp/{{current_book.asin}}?tag={{ affiliate }}"><img src="
-            {% if current_book.largeImageLink %}
-                {{ current_book.largeImageLink }}
-            {% else %}
-                {% if current_book.mediumImageLink  %}
-                    {{ current_book.mediumImageLink }}
-                {% else %}
-                     {{ current_book.imageLink }}
-                {% endif %}
-            {% endif %}
-            " alt="{{ current_book.title }}" ></a>
-          <figcaption>{{ current_book.title }} (Edition: {{current_book.edition}})</figcaption>
-        </figure> 
-        <div><a href="http://amazon.com/dp/{{current_book.asin}}?tag={{ affiliate }}">View on Amazon</a></div>
-        {% if current_book.process_now %}
-            Price data is currently updating.?tag={{ affiliate }}
-        {% else %}
-            <form method="post" action="{% url 'books:update' current_book.id %}">
-                {% csrf_token %}
-                <input type="hidden" name="q" id="id_q" value="{{ current_book.id }}"/>
-                <input type="submit" value="Update"/>
-            </form>
-         {% endif %}
-       <ul>
-            <li>ISBN: {{ current_book.isbn13 }}</li>
-            <li>Published: {{ current_book.publicationDate }}</li>
-            <li>Pages: {{ current_book.page_count }}</li>
-            <li>New Price: ${{ current_price.price }} <small>as of {{ current_price.price_date }} </small> </li>
-            <li>Used Price: ${{ current_price_used.price }}  <small>as of {{ current_price_used.price_date }}</small></li>
-            
-            
-        </ul>
-        
-        <div>Publisher Information: {{ current_book.description | safe }}</div>
-        {% else %}
-            <div>No current edition information in our database!</div>
-        {% endif %} 
-            </section>
-</main>
-<aside class="previous">
-    <section>
-        {% if previous_book %}
-            <a href="http://amazon.com/dp/{{previous_book.asin}}?tag={{ affiliate }}"><h1>Previous Edition - ${{ previous_price.price }}</h1></a>
-            <figure>
-              <a href="http://amazon.com/dp/{{previous_book.asin}}?tag={{ affiliate }}"><img src="{{ previous_book.largeImageLink }}" alt="{{ previous_book.title }}" ></a>
-              <figcaption>{{ previous_book.title }} (Edition: {{previous_book.edition}})</figcaption>
-            </figure> 
-            <div><a href="http://amazon.com/dp/{{previous_book.asin}}?tag={{ affiliate }}">View on Amazon</a></div>
-            {% if previous_book.process_now %}
-                Price data is currently updating.
-            {% else %}
-                <form method="post" action="{% url 'books:update' previous_book.id %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="q" id="id_q" value="{{ previous_book.id }}"/>
-                    <input type="submit" value="Update"/>
-                </form>
-            {% endif %}
-            <ul>
-                <li>ISBN: {{ previous_book.isbn13 }}</li>
-                <li>Published: {{ previous_book.publicationDate }}</li>
-                 <li>Pages: {{ previous_book.page_count }}</li>
-                <li>New Price: ${{ previous_price.price }} ({{ previous_price.price_date }}) </li>
-                <li>Used Price: ${{ previous_price_used.price }} ({{ previous_price_used.price_date }}) </li>
-            </ul>
-            <div>Publisher Information: {{ previous_book.description |safe}}</div>
-        {% else %}
-            <div>No previous edition information in our database!</div>
-        {% endif %}    </section>
-</aside>
+<!--<header><img id='banner' src="% static "books/we_banner.png" %" alt="WHICH EDITION"/>
+WhichEdition Header - {{ current_book.title }}</header> -->
+

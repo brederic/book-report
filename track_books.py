@@ -34,6 +34,10 @@ from books.models import Book, Price, SalesRank, InventoryBook, Settings, FeedLo
 settings = Settings.objects.all()[0]
 sales_rank_date = timezone.now()-datetime.timedelta(days=settings.sales_rank_delta)
 
+
+base_tag = "Item" 
+# "Product"
+
 def send_email():
     #send alert
     msg = 'You may want to start the book delete script now'
@@ -59,21 +63,31 @@ def track_book_prices():
     
     # set their track flag and clear their review flags
     scored_books.update(track=True, newReview = False, usedReview = False)
-    # get a list of asins for the books we want to track
-    tracked_asins = list(Book.objects.filter(track=True).distinct().values_list('asin', flat=True))
-    #tracked_asins = list(Book.objects.filter(asin='1405182407').distinct().values_list('asin', flat=True))
-    
-    total = len(tracked_asins)
-    print ('track count: ' + str(total))
-    
-    # get price info for 10 books at a time
-    for page in range(0, int(math.ceil(total/10))):
-        check_process_now()
-        asin_slice = tracked_asins[page*10:min(total, page*10+10)]
-        if len(asin_slice) == 0: 
-            print(time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()) + str(asin_slice))
-            continue
-        process_asin_slice(asin_slice)
+    while True:
+        # get a list of asins for the books we want to track
+        tracked_asins = list(Book.objects.filter(track=True).distinct().values_list('asin', flat=True)[0:1000])
+        #tracked_asins = list(Book.objects.filter(asin='1405182407').distinct().values_list('asin', flat=True))
+        
+        total = len(tracked_asins)
+        if total == 0:
+            break
+        
+        print ('track count: ' + str(total))
+        
+        # get price info for 10 books at a time
+        for page in range(0, int(math.ceil(total/10))):
+            try:
+                check_process_now()
+                asin_slice = tracked_asins[page*10:min(total, page*10+10)]
+                if len(asin_slice) == 0: 
+                    print(time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()) + str(asin_slice))
+                    continue
+                asins = ",".join(asin_slice )
+                process_asin_slice(asins)
+            except django.db.utils.OperationalError as e:
+                print ('Error: ' + str(e))
+                time.sleep(1)
+                continue
 
     print('Track Books End Time: ' + time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()))
     send_email()
@@ -94,7 +108,7 @@ def check_process_now():
         if len(asin_slice) == 0: 
             print("Finished with process_now")
             return
-        process_asin_slice(asin_slice)   
+        process_asin_slice(','.join(asin_slice))   
         #clear process_now  flag 
         books  = Book.objects.filter(asin__in=asin_slice)
         books.update(process_now=False)
@@ -102,11 +116,15 @@ def check_process_now():
         
 def process_asin_slice(asin_slice):
     # throttle our requests 
-    delay = 2.05 #s
+    # AWS delay = 2.05 #s
+    # affiliate
+    delay = 2.5 #s
     try:
         # Get used price info
         timeBefore = timezone.now()
-        result = amazon_services.get_book_price_info(asin_slice, 'Used')
+        #print("Tracking " + asin_slice)
+        #result = amazon_services.get_book_price_info(asin_slice, 'Used')
+        result = amazon_services.get_book_info_affiliate(asin_slice, 'Used')
         processPriceResults(result)
         # don't overload the API
         elapsedTime = (timezone.now()-timeBefore).total_seconds()
@@ -116,7 +134,7 @@ def process_asin_slice(asin_slice):
         time.sleep(sleepTime)
         # Get new price info
         timeBefore = timezone.now()
-        result = amazon_services.get_book_price_info(asin_slice, 'New')
+        result = amazon_services.get_book_info_affiliate(asin_slice, 'New')
         processPriceResults(result)
         elapsedTime = (timezone.now()-timeBefore).total_seconds()
         sleepTime = max(0,delay-elapsedTime)
@@ -124,14 +142,14 @@ def process_asin_slice(asin_slice):
         #.clean_books(sleepTime)
         time.sleep(sleepTime)
         # Get sales rank info
-        timeBefore = timezone.now()
-        result = amazon_services.get_book_salesrank_info(asin_slice)
+        #timeBefore = timezone.now()
+        #result = amazon_services.get_book_salesrank_info(asin_slice)
         processSalesRankResults(result)
-        elapsedTime = (timezone.now()-timeBefore).total_seconds()
-        sleepTime = max(0,delay-elapsedTime)
-        print('Process took '+ str(elapsedTime) + '. Sleeping for ' + str(sleepTime))
+        #elapsedTime = (timezone.now()-timeBefore).total_seconds()
+        #sleepTime = max(0,delay-elapsedTime)
+        #print('Process took '+ str(elapsedTime) + '. Sleeping for ' + str(sleepTime))
         #data_cleanup.clean_books(sleepTime)
-        time.sleep(sleepTime)
+        # time.sleep(sleepTime)
         
     
         
@@ -139,7 +157,7 @@ def process_asin_slice(asin_slice):
         print("Unknown Error in track_book_prices {0}".format(sys.exc_info()[0]))
         traceback.print_exc()
         print (asin_slice)
-        time.sleep(120)
+        time.sleep(30)
 
 def track_book_metadata():
     
@@ -324,12 +342,16 @@ def chase_low_price_used(book, used_xml, new_xml):
         
 def processPriceResults(xml):
     #print(xml.prettify())
-    if not xml.find('Product'):
+    if not xml:
         print(xml.prettify())
-        raise AssertionError("No Product: What's goin on in heah")
+        raise AssertionError("No xml: What's goin on in heah")
+        
+    if not xml.find(base_tag):
+        print(xml.prettify())
+        raise AssertionError("No " + base_tag + ": What's goin on in heah")
         
 
-    for product in xml.find_all('Product'):
+    for product in xml.find_all(base_tag):
         #print(product.prettify())
         asin = product.find('ASIN').string
         try:
@@ -339,12 +361,19 @@ def processPriceResults(xml):
         price = Price()
         price.book = book
         if not product.find('Price'):
-            print(product.prettify())
+            #print(product.prettify())
             print("No Price: What's goin on in heah")
             continue
         else:
-            price.price = product.find('Price').LandedPrice.Amount.string
-        condition = product.find('ItemCondition').string
+            if not product.find('Price').Amount:
+                print(product.find('Price').prettify())
+                print("No Amount: What's goin on in heah")
+                continue
+            else:
+                # MWSprice.price = product.find('Price').LandedPrice.Amount.string
+                price.price = amazon_services.addDecimal(product.find('Price').Amount.string)
+        # MWS condition = product.find('ItemCondition').string
+        condition = product.find('Condition').string
         if condition=='New':
             price.condition = '5'
         elif condition == 'Used':
@@ -352,19 +381,20 @@ def processPriceResults(xml):
             # get first price that has better than acceptable subcondition
             sc = product.find('ItemSubcondition',string=["Good", "VeryGood", "LikeNew"])
             if sc:
-                price.good_price = sc.parent.parent.Price.LandedPrice.Amount.string
+                price.good_price = amazon_services.addDecimal(sc.parent.parent.Price.Amount.string)
             else:
                 price.good_price = float(price.price)*1.1
         price.price_date = timezone.now()
         price.save()
-        #print(str(book) + str(price))
+        print(str(book) + str(price))
     
 def processSalesRankResults(xml):
     #print(xml.prettify())
-    for product in xml.find_all('Product'):
+    for product in xml.find_all(base_tag):
         asin = product.find('ASIN').string
         try:
             book = Book.objects.get(asin=asin)
+            book.update(track=False)
         except:
             continue
         ranktag = product.find('SalesRank')
@@ -379,6 +409,8 @@ def processSalesRankResults(xml):
         salesRank.rank = ranktag.Rank.string
         salesRank.rank_date = timezone.now()
         salesRank.save()
+        print(str(book) + str(salesRank))
+
         book.get_bookscore().update_rolling_salesrank()
         book.get_bookscore().check_for_alert()
         
@@ -399,7 +431,7 @@ def remove_excess_books():
     while True:
         books = Book.objects.filter(price__price_date__gte=sales_rank_date).annotate(max_pr=Max('price__price'))\
             .filter(max_pr__lte=settings.lowest_high_price).annotate(num_ib=Count('inventorybook'))\
-            .filter(num_ib=0)[:1000]
+            .filter(num_ib=0)[:500]
         print('Low Price: ' + str(len(books)))
         if books:
             with transaction.atomic():
@@ -449,6 +481,8 @@ if __name__ == "__main__":
     main(sys.argv[1:])
     print("Track books activity completed.")
     exit
-    print('Inventory')
+    #print('Inventory')
     #data_cleanup.clean_book_by_asin('1118358538')
+    process_asin_slice('007803535X')
+
     

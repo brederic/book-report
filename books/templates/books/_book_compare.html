@@ -1,0 +1,40 @@
+       {% if book %}
+        <a href="http://amazon.com/dp/{{book.asin}}?tag={{ affiliate }}"><h1>{{ edition_type }} Edition - ${{ price_new.price }}</h1></a>
+        <figure>
+          <a href="http://amazon.com/dp/{{book.asin}}?tag={{ affiliate }}"><img src="
+            {% if book.largeImageLink %}
+                {{ book.largeImageLink }}
+            {% else %}
+                {% if book.mediumImageLink  %}
+                    {{ book.mediumImageLink }}
+                {% else %}
+                     {{ book.imageLink }}
+                {% endif %}
+            {% endif %}
+            " alt="{{ book.title }}" ></a>
+          <figcaption>{{ book.title }} (Edition: {{book.edition}})</figcaption>
+        </figure> 
+        <div><a href="http://amazon.com/dp/{{book.asin}}?tag={{ affiliate }}">View on Amazon</a></div>
+        {% if book.process_now %}
+            Price data is currently updating.?tag={{ affiliate }}
+        {% else %}
+            <form method="post" action="{% url 'books:update' book.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="q" id="id_q" value="{{ book.id }}"/>
+                <input type="submit" value="Update"/>
+            </form>
+         {% endif %}
+       <ul>
+            <li>ISBN: {{ book.isbn13 }}</li>
+            <li>Published: {{ book.publicationDate }}</li>
+            <li>Pages: {{ book.page_count }}</li>
+            <li>New Price: ${{ price_new.price }} <small>as of {{ price_new.price_date }} </small> </li>
+            <li>Used Price: ${{ price_used.price }}  <small>as of {{ price_used.price_date }}</small></li>
+            
+            
+        </ul>
+        
+        <div>Publisher Information: {{ book.description | safe }}</div>
+        {% else %}
+            <div>No current edition information in our database!</div>
+        {% endif %} 

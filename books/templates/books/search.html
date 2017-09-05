@@ -1,4 +1,8 @@
-{% load staticfiles %}
+{% extends "books/__l_one_col.html" %}
+
+{% block title %} Search | {{ block.super }}{% endblock %}
+
+{% block main_col %}
 <form method="get" action="search">
           
 
@@ -10,8 +14,12 @@
         </form>
 
        
-
 You searched for "{{ query_string }}" and the results are listed below.
+    <ul>
+    {% for book in found_entries %}
+        <li><a href="{% url 'books:compare' book.id %}">{{ book.title }}</a></li>
+    {% endfor %}
+    </ul>
+    
+{% endblock %}
 
-
-           <li> {{ found_entries }}}</li>

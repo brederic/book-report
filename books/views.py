@@ -86,7 +86,7 @@ def search(request):
         
         found_entries = Book.objects.filter(track=True).filter(entry_query).order_by('-publicationDate')
 
-    return render(request, 'books/index.html',
+    return render(request, 'books/search.html',
                           { 'query_string': query_string, 'found_entries': found_entries },
                           context_instance=RequestContext(request))
     

@@ -377,6 +377,25 @@ def get_book_info(asin):
         return processAmazonBook(book_info.find('Item'), False)
     else:
         print(book_info.prettify())
+        
+def get_book_info_affiliate (asins, condition):
+    print('get_book_info(' + asins + ')')
+    params = {'ResponseGroup': 'Offers,SalesRank,Medium,RelatedItems',
+              'AssociateTag': AWS_USER,
+              'Operation': 'ItemLookup',
+              'IdType': 'ASIN',
+              'Condition': condition,
+              'RelationshipType': 'NewerVersion',
+              'ItemId': asins}
+    url = getSignedUrl(params)
+
+    session = requests.Session()
+    response = session.get(url, headers=user_agent)
+    book_info = BeautifulSoup(response.text, 'xml')
+    #print('get_book_info(' + asins + ')')
+    if not book_info.find('Item'):
+        print(book_info.prettify())
+    return book_info
 
 
 def get_book_info_2(asins):
@@ -592,8 +611,8 @@ if __name__ == "__main__":
     # scanCamelBooks()
     print(access_key)
     #get_book_infoMWS(['0312157584'])
-    asin = '0205891500'
-    get_book_info(asin)
+    asin = '1909141011'
+    get_book_info_affiliate(asin, 'New')
     book = Book.objects.filter(asin= asin)[0]
     print(str(book))
     print(book.mediumImageLink)
