@@ -11,7 +11,6 @@ if __name__ == "__main__":
 import books.models
 from books.models import InventoryBook, Book
 import feeds
-import pbs
 import amazon_services
 
 def list_book(book):
