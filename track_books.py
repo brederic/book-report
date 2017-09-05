@@ -65,8 +65,11 @@ def track_book_prices():
     scored_books.update(track=True, newReview = False, usedReview = False)
     while True:
         # get a list of asins for the books we want to track
+        
         tracked_asins = list(Book.objects.filter(track=True).distinct().values_list('asin', flat=True)[0:1000])
         #tracked_asins = list(Book.objects.filter(asin='1405182407').distinct().values_list('asin', flat=True))
+        books = Book.objects.filter(asin__in=tracked_asins)
+        books.update(track=False)
         
         total = len(tracked_asins)
         if total == 0:
@@ -150,6 +153,7 @@ def process_asin_slice(asin_slice):
         #print('Process took '+ str(elapsedTime) + '. Sleeping for ' + str(sleepTime))
         #data_cleanup.clean_books(sleepTime)
         # time.sleep(sleepTime)
+        
         
     
         
