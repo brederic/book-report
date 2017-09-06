@@ -31,12 +31,12 @@ def index(request):
             .order_by('-book__bookscore__pricescore__current_price_score')
     new_review_list = Book.objects.filter(newReview=True)
     used_review_list = Book.objects.filter(usedReview=True)
-    context = RequestContext(request, {
+    context =  {
         'new_review_list': new_review_list,
         'used_review_list': used_review_list,
         'listed_book_list': listed_book_list,
         'review_strategy': review_strategy
-    })
+    }
     return render(request, 'books/index.html', context)
 import re
 
@@ -87,8 +87,7 @@ def search(request):
         found_entries = Book.objects.filter(track=True).filter(entry_query).order_by('-publicationDate')
 
     return render(request, 'books/search.html',
-                          { 'query_string': query_string, 'found_entries': found_entries },
-                          context_instance=RequestContext(request))
+                          { 'query_string': query_string, 'found_entries': found_entries })
     
 def compare(request, book_id):
     book = get_object_or_404(Book, pk=book_id)
@@ -124,7 +123,7 @@ def compare(request, book_id):
         if len(previous_price) > 0:
             previous_price=previous_price[0]
         
-    context = RequestContext(request, {
+    context =  {
         'current_book': current_book,
         'previous_book': previous_book,
         'current_price': current_price,
@@ -132,7 +131,7 @@ def compare(request, book_id):
         'current_price_used': current_price_used,
         'previous_price_used': previous_price_used,
         'affiliate': aws_config.AWS_USER,
-    })
+    }
     return render(request, 'books/compare.html', context)
     
 def getPrevAndNext(group, item):
