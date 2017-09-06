@@ -4,6 +4,7 @@ from django.shortcuts import get_object_or_404, render
 from django.db.models import Q, Max, Count, F
 from django.core.urlresolvers import reverse
 import search
+from embed_video.backends import detect_backend
 
 import states, aws_config
 
@@ -31,11 +32,14 @@ def index(request):
             .order_by('-book__bookscore__pricescore__current_price_score')
     new_review_list = Book.objects.filter(newReview=True)
     used_review_list = Book.objects.filter(usedReview=True)
+    my_video = detect_backend('https://www.youtube.com/watch?v=nojaxvETShg&t=26s')
     context =  {
         'new_review_list': new_review_list,
         'used_review_list': used_review_list,
         'listed_book_list': listed_book_list,
-        'review_strategy': review_strategy
+        'review_strategy': review_strategy,
+        'my_video' : my_video,
+        
     }
     return render(request, 'books/index.html', context)
 import re
