@@ -1,7 +1,9 @@
 {% load staticfiles i18n %}
+{% load analytical %}
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    {% analytical_head_top %}
     <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -22,8 +24,10 @@
             <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
         {% endblock %}
         {% block extra_head %}{% endblock %}
+        {% analytical_head_bottom %}
     </head>
     <body>
+        {% analytical_body_top %}
         <header class="navbar navbar-fixed-top">
 
             {% include "books/_navigation.html" %}
@@ -34,5 +38,6 @@
                 {% endblock %}
             </div>
         </div>
+        {% analytical_body_bottom %}
     </body>
 </html>

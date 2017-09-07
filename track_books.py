@@ -43,9 +43,7 @@ def send_email():
     msg = 'You may want to start the book delete script now'
     mail.sendEmail('Track books is finished', msg)
     
-def track_book_prices():
-  
-    print('Track Books Start Time: ' + time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()))
+def mark_tracked_books():
     # choose books whose sales rank has stayed above worst_sales_rank for the past year and whose price has gotten above lowest_high_price in the past year
     #scored_books = Book.objects.filter(price__price_date__gte=sales_rank_date).annotate(max_pr=Max('price__price')).filter(max_pr__lte=settings.lowest_high_price)\
     #   .filter(salesrank__rank_date__gte=sales_rank_date).annotate(max_sr=Max('salesrank__rank')).filter(max_sr__lte=settings.worst_sales_rank)
@@ -63,6 +61,12 @@ def track_book_prices():
     
     # set their track flag and clear their review flags
     scored_books.update(track=True, newReview = False, usedReview = False)
+    
+    
+def track_book_prices():
+  
+    print('Track Books Start Time: ' + time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()))
+    mark_tracked_books()
     while True:
         # get a list of asins for the books we want to track
         
@@ -92,6 +96,8 @@ def track_book_prices():
                 time.sleep(1)
                 continue
 
+    #restore track markings
+    mark_tracked_books()
     print('Track Books End Time: ' + time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()))
     send_email()
 
@@ -487,6 +493,7 @@ if __name__ == "__main__":
     exit
     #print('Inventory')
     #data_cleanup.clean_book_by_asin('1118358538')
-    process_asin_slice('007803535X')
+    #process_asin_slice('007803535X')
+    mark_tracked_books()
 
     

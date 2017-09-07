@@ -97,7 +97,7 @@ def score_books():
 def find_tracked_books():
     
     settings.refresh_from_db()
-    #settings.is_scoring_books = False
+    settings.is_scoring_books = False
     if not settings.is_scoring_books:
                 
         settings.last_book_score_run = timezone.now()
