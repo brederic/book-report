@@ -15,8 +15,11 @@ aside {
   margin: 0 1.5%;
   width: 47%;
 } -->
-img {
+img.compare {
     height: 300px;
+    }
+img.search {
+    height: 40px;
     }
 #banner {
  height: 200px;
