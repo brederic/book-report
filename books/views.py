@@ -88,7 +88,8 @@ def search(request):
         
         entry_query = get_query(query_string, ['title', 'author','isbn', 'isbn13'])
         
-        found_entries = Book.objects.filter(track=True).filter(entry_query).order_by('-publicationDate')
+        found_entries = list(Book.objects.filter(track=True).filter(entry_query).order_by('-publicationDate'))
+
 
     return render(request, 'books/search.html',
                           { 'query_string': query_string, 'found_entries': found_entries })

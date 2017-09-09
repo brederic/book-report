@@ -1,7 +1,7 @@
        {% if book %}
         <a href="http://amazon.com/dp/{{book.asin}}?tag={{ affiliate }}"><h1>{{ edition_type }} Edition - ${{ price_new.price }}</h1></a>
         <figure>
-          <a href="http://amazon.com/dp/{{book.asin}}?tag={{ affiliate }}"><img src="
+          <a href="http://amazon.com/dp/{{book.asin}}?tag={{ affiliate }}"><img class="compare" src="
             {% if book.largeImageLink %}
                 {{ book.largeImageLink }}
             {% else %}
