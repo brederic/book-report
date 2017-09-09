@@ -133,6 +133,7 @@ class Book(models.Model):
     previous_edition = models.BooleanField(default=False, db_index=True)
     description = models.TextField(blank=True)
     page_count = models.IntegerField(null=True)
+    freeze_edition = models.BooleanField(default=False, db_index=True)
     
     
     def amazon_link(self):

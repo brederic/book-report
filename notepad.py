@@ -546,6 +546,26 @@ def aggregate_book_prices():
             prices[day] += first_price.price
     for k in sorted(prices.keys()):
         print(str(k), str(prices[k]))
+    
+def check_stuff():
+    book = Book.objects.get(asin='0078021375')
+    print(str(book))
+    print(str(book.publicationDate))
+    print(str(book.edition))
+    if book.current_edition:
+        print(str(book.current_edition))
+        print(str(book.current_edition.publicationDate))
+        print(str(book.current_edition.edition))
+    
+def clear_edition():
+   book = Book.objects.get(asin='0078021375')
+   book.current_edition=book
+   book.freeze_edition=True
+   book.save()
+    
+check_stuff()
+clear_edition()
+check_stuff()
         
         
     
@@ -578,4 +598,4 @@ def aggregate_book_prices():
 #repopulate_book_prices('013285337X')
 #aggregate_book_prices()
 #trigger_price_feed()
-count_tables()
+#count_tables()

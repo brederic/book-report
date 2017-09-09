@@ -457,7 +457,12 @@ def processAmazonBooks(result):
     #print(result.prettify())
     books = result.findAll('Item');
     for item in books:
-        processAmazonBook(item, False)
+        try:
+            processAmazonBook(item, False)
+        except Exception as e:
+            print(item.prettify())
+            traceback.print_exc()
+            continue
         
     
 def processAmazonBook(item, do_price):
@@ -490,7 +495,7 @@ def processAmazonBook(item, do_price):
                 
         else:
             book.isbn = book.asin
-        book.title = item.Title.string
+        book.title = item.Title.string[0:100]
         if (item.Author):
             book.author = item.Author.string
         else:
@@ -507,25 +512,26 @@ def processAmazonBook(item, do_price):
                 if review.Source.string == 'Product Description':
                     book.description = review.Content.string
         if (item.Binding):
-            book.binding = item.Binding.string
+            book.binding = item.Binding.string[0:15]
         if (item.Edition):
             book.edition = item.Edition.string
         if item.NumberOfPages:
             book.page_count = item.NumberOfPages.string
         else:
             print("No NumberOfPages")
-        if (item.RelatedItem):
-            asin = item.RelatedItem.Item.ASIN.string
-            print('find related item with asin: ' + asin)
-            try:
+        if not book.freeze_edition:
+            if (item.RelatedItem):
+                asin = item.RelatedItem.Item.ASIN.string
+                print('find related item with asin: ' + asin)
+                try:
 
-                current_edition = Book.objects.get(asin=asin)
-            except (Book.DoesNotExist):
-                print('create new book record')
-                current_edition = get_book_info(asin)
-                print('new book:' + str(current_edition))
-            book.current_edition = current_edition
-            book.save()
+                    current_edition = Book.objects.get(asin=asin)
+                except (Book.DoesNotExist):
+                    print('create new book record')
+                    current_edition = get_book_info(asin)
+                    print('new book:' + str(current_edition))
+                book.current_edition = current_edition
+                book.save()
 
     except AttributeError as e:
         print("AttributeError in processAmazonBook {0}".format(e))

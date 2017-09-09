@@ -134,7 +134,7 @@ def process_asin_slice(asin_slice):
         #print("Tracking " + asin_slice)
         #result = amazon_services.get_book_price_info(asin_slice, 'Used')
         result = amazon_services.get_book_info_affiliate(asin_slice, 'Used')
-        processPriceResults(result)
+        processPriceResultsAffiliate(result)
         # don't overload the API
         elapsedTime = (timezone.now()-timeBefore).total_seconds()
         sleepTime = max(0,delay-elapsedTime)
@@ -142,23 +142,24 @@ def process_asin_slice(asin_slice):
         #data_cleanup.clean_books(sleepTime)
         time.sleep(sleepTime)
         # Get new price info
-        timeBefore = timezone.now()
-        result = amazon_services.get_book_info_affiliate(asin_slice, 'New')
-        processPriceResults(result)
-        elapsedTime = (timezone.now()-timeBefore).total_seconds()
-        sleepTime = max(0,delay-elapsedTime)
-        print('Process took '+ str(elapsedTime) + '. Sleeping for ' + str(sleepTime))
+        #timeBefore = timezone.now()
+        #result = amazon_services.get_book_info_affiliate(asin_slice, 'New')
+        #processPriceResults(result)
+        #elapsedTime = (timezone.now()-timeBefore).total_seconds()
+        #sleepTime = max(0,delay-elapsedTime)
+        #print('Process took '+ str(elapsedTime) + '. Sleeping for ' + str(sleepTime))
         #.clean_books(sleepTime)
-        time.sleep(sleepTime)
+        #time.sleep(sleepTime)
         # Get sales rank info
         #timeBefore = timezone.now()
         #result = amazon_services.get_book_salesrank_info(asin_slice)
-        processSalesRankResults(result)
+        processSalesRankResultsAffiliate(result)
         #elapsedTime = (timezone.now()-timeBefore).total_seconds()
         #sleepTime = max(0,delay-elapsedTime)
         #print('Process took '+ str(elapsedTime) + '. Sleeping for ' + str(sleepTime))
         #data_cleanup.clean_books(sleepTime)
         # time.sleep(sleepTime)
+        amazon_services.processAmazonBooks(result)
         
         
     
@@ -351,7 +352,7 @@ def chase_low_price_used(book, used_xml, new_xml):
     return shouldLowerPrice(target_price, book)
         
 def processPriceResults(xml):
-    #print(xml.prettify())
+    print(xml.prettify())
     if not xml:
         print(xml.prettify())
         raise AssertionError("No xml: What's goin on in heah")
@@ -404,7 +405,7 @@ def processSalesRankResults(xml):
         asin = product.find('ASIN').string
         try:
             book = Book.objects.get(asin=asin)
-            book.update(track=False)
+            #book.update(track=False)
         except:
             continue
         ranktag = product.find('SalesRank')
@@ -417,6 +418,90 @@ def processSalesRankResults(xml):
         salesRank = SalesRank()
         salesRank.book = book
         salesRank.rank = ranktag.Rank.string
+        salesRank.rank_date = timezone.now()
+        salesRank.save()
+        print(str(book) + str(salesRank))
+
+        book.get_bookscore().update_rolling_salesrank()
+        book.get_bookscore().check_for_alert()
+         
+def processPriceResultsAffiliate(xml):
+    #print(xml.prettify())
+    if not xml:
+        print(xml.prettify())
+        raise AssertionError("No xml: What's goin on in heah")
+        
+    if not xml.find(base_tag):
+        print(xml.prettify())
+        raise AssertionError("No " + base_tag + ": What's goin on in heah")
+        
+
+    for product in xml.find('Items').findAll('Item', recursive=False):
+        #print(product.prettify())
+        asin = product.find('ASIN').string
+        try:
+            book = Book.objects.get(asin=asin)
+        except:
+            continue
+        #get New Price
+        price = Price()
+        price.book = book
+        if not product.find('LowestNewPrice'):
+            print(product.prettify())
+            print("No LowestNewPrice: What's goin on in heah")
+            
+        else:
+            if not product.find('LowestNewPrice').Amount:
+                print(product.find('LowestNewPrice').prettify())
+                print("No Amount: What's goin on in heah")
+                continue
+            else:
+                # MWSprice.price = product.find('Price').LandedPrice.Amount.string
+                price.price = amazon_services.addDecimal(product.find('LowestNewPrice').Amount.string)
+            price.condition = '5'
+            price.price_date = timezone.now()
+            price.save()
+            print(str(book) + str(price))
+        #get Used Price
+        price = Price()
+        price.book = book
+        if not product.find('LowestUsedPrice'):
+            print(product.prettify())
+            print("No LowestUsedPrice: What's goin on in heah")
+            
+        else:
+            if not product.find('LowestUsedPrice').Amount:
+                print(product.find('LowestUsedPrice').prettify())
+                print("No Amount: What's goin on in heah")
+                continue
+            else:
+                # MWSprice.price = product.find('Price').LandedPrice.Amount.string
+                price.price = amazon_services.addDecimal(product.find('LowestUsedPrice').Amount.string)
+            price.condition = '0'
+            price.price_date = timezone.now()
+            price.save()
+            print(str(book) + str(price))
+
+    
+def processSalesRankResultsAffiliate(xml):
+    #print(xml.prettify())
+    for product in xml.find_all(base_tag):
+        asin = product.find('ASIN').string
+        try:
+            book = Book.objects.get(asin=asin)
+            #book.update(track=False)
+        except:
+            continue
+        ranktag = product.find('SalesRank')
+        if not ranktag:
+            return
+        #if not ranktag.ProductCategoryId:
+        #   return
+        #if not ranktag.ProductCategoryId.string == 'book_display_on_website':
+        #    return
+        salesRank = SalesRank()
+        salesRank.book = book
+        salesRank.rank = ranktag.string
         salesRank.rank_date = timezone.now()
         salesRank.save()
         print(str(book) + str(salesRank))
@@ -488,12 +573,12 @@ def main(argv):
 
 if __name__ == "__main__":
     #scanCamelBooks()
-    main(sys.argv[1:])
-    print("Track books activity completed.")
-    exit
+    #main(sys.argv[1:])
+    #print("Track books activity completed.")
+    #exit
     #print('Inventory')
     #data_cleanup.clean_book_by_asin('1118358538')
-    #process_asin_slice('007803535X')
-    mark_tracked_books()
+    process_asin_slice('0763762997')
+    #mark_tracked_books()
 
     
