@@ -7,14 +7,10 @@
 <h3>Welcome to WhichEdition.com!  Type an ISBN, book title or author in the search box above to find out if you can 
 save money on your textbook by purchasing an older edition of the book.</h3>
 
+   {% include "books/_compare_list.html" %}
+
 {% video my_video '800x600' %}
 
-
-    <ul>
-    {% for book in found_entries %}
-        <li><a href="{% url 'books:compare' book.id %}">{{ book.title }}</a></li>
-    {% endfor %}
-    </ul>
     
 {% endblock %}
 

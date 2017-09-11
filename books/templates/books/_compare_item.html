@@ -1,0 +1,7 @@
+{% load staticfiles %}
+    <ul>
+    {% for compare in compare_list %}
+        <li><a href="{% url 'books:compare' compare.current_edition.id %}"> {{ compare.current_edition.title }}</a></li>
+    {% endfor %}
+    </ul>
+

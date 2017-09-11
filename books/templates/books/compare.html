@@ -7,7 +7,6 @@
 {% endblock %}
 
 {% block side_col %}
-    {{ previous_book.current_price.price }}
     {% include "books/_book_compare.html" with book=previous_book edition_type='Previous' price_new=previous_price price_used=previous_price_used %}
 {% endblock %}
 

@@ -1,7 +1,8 @@
 <!--table{ border-bottom:1px dotted fuchsia; border-left:1px dotted fuchsia }
 td{ padding:11px 20px 20px 11px; border-top:1px dotted fuchsia; border-right:1px dotted fuchsia; text-align: right;}
 ul { margin-top:10px; margin-bottom:10px; margin-left:0; padding-left:1em }
-li{ margin-bottom:10px }
+li{ margin-bottom:10px;
+    word-wrap: break-word;}
 li a {
     color: green;
 }

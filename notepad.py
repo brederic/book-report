@@ -25,7 +25,7 @@ MAX_SALES_RANK = 250000
 
 
 import track_books
-from books.models import Book, Price, SalesRank, InventoryBook, Settings, BookScore, PriceScore
+from books.models import Book, Price, SalesRank, InventoryBook, Settings, BookScore, PriceScore, Comparison
 from django.db.models import Avg, Max, Min
 settings = Settings.objects.all()[0]
 sales_rank_date = timezone.now()-datetime.timedelta(days=settings.sales_rank_delta)
@@ -558,15 +558,22 @@ def check_stuff():
         print(str(book.current_edition.edition))
     
 def clear_edition():
-   book = Book.objects.get(asin='0078021375')
+   book = Book.objects.get(asin='1259870499')
    book.current_edition=book
    book.freeze_edition=True
    book.save()
     
-check_stuff()
-clear_edition()
-check_stuff()
-        
+def stuff():
+    compare = Comparison.objects.get(pk='2591')
+    compare.current_edition.save()
+    compare.previous_edition.save()
+    print(str(compare.current_edition.slug))
+    print(str(compare.previous_edition.slug))
+    print(str(compare.get_absolute_url()))
+    
+    
+    
+stuff()
         
     
         

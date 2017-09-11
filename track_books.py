@@ -6,7 +6,7 @@ import django
 import datetime
 import time
 import mail
-from django.db.models import Q, Max, Count
+from django.db.models import Q, Max, Count, Sum, F
 from django.utils import timezone
 import math
 from decimal import *
@@ -29,7 +29,7 @@ if __name__ == "__main__":
 MAX_SALES_RANK = 250000
 
 import amazon, amazon_services, feeds, data_cleanup
-from books.models import Book, Price, SalesRank, InventoryBook, Settings, FeedLog, SUB_CONDITION_CHOICES
+from books.models import Book, Comparison, Price, SalesRank, InventoryBook, Settings, FeedLog,SUB_CONDITION_CHOICES
 
 settings = Settings.objects.all()[0]
 sales_rank_date = timezone.now()-datetime.timedelta(days=settings.sales_rank_delta)
@@ -98,6 +98,8 @@ def track_book_prices():
 
     #restore track markings
     mark_tracked_books()
+    make_comparisons()
+    mark_top_comparisons()
     print('Track Books End Time: ' + time.strftime("%Y-%m-%d T%H:%M:%SZ  - ", timezone.now().timetuple()))
     send_email()
 
@@ -123,8 +125,13 @@ def check_process_now():
         books.update(process_now=False)
         
         
+def process_isbn13(isbn):
+    book = Book.objects.get(isbn13=isbn)
+    process_asin_slice(book.asin)
+        
 def process_asin_slice(asin_slice):
-    # throttle our requests 
+    # throttle our requests
+     
     # AWS delay = 2.05 #s
     # affiliate
     delay = 2.5 #s
@@ -534,7 +541,83 @@ def remove_excess_books():
                     book.delete()
         else:
             break
-   
+            
+def create_comparison(current):
+    if not current.is_current_edition(): 
+        print("Not creating comparison: Not current edition")
+        return
+    previous = current.get_previous_edition()
+    if not previous:
+        print("Not creating comparison: No previous edition")
+        return
+    comparison = Comparison()
+    comparison.current_edition = current
+    comparison.previous_edition = previous
+    comparison.rank = 100000000
+    comparison.save()
+    return comparison
+    
+def populate_comparison(current):
+    try:
+        comp = Comparison.objects.get(current_edition = current)
+    except:
+        comp = create_comparison(current)
+        if not comp:
+            return
+    previous = comp.previous_edition
+    #print('Curreent: %s, Previous: %s'%(current.current_price_new(),previous.current_price_new()))
+    comp.difference_new = current.current_price_new().price - previous.current_price_new().price
+    if comp.difference_new < 0:
+        comp.previous_better_new = False
+        comp.difference_new = -comp.difference_new
+        comp.savings_new = comp.difference_new*100/previous.current_price_new().price
+    else:
+        comp.previous_better_new = True
+        comp.savings_new = comp.difference_new*100/current.current_price_new().price
+        
+    # USED
+     
+    comp.difference_used = min(current.current_price_used().price, current.current_price_new().price) - \
+        min(previous.current_price_used().price, previous.current_price_new().price)
+    if comp.difference_used < 0:
+        comp.previous_better_used = False
+        comp.difference_used = -comp.difference_used
+        comp.savings_used = comp.difference_used*100/previous.current_price_used().price
+    else:
+        comp.previous_better_used = True
+        comp.savings_used = comp.difference_used*100/current.current_price_used().price
+    if current.current_rank():
+        comp.rank = current.current_rank().rank
+    if not comp.rank:
+        comp.rank = 10000000
+    comp.save()    
+    return comp
+    
+def make_comparisons():    
+    books = Book.objects.exclude(current_edition=None).exclude(track=False).order_by('-publicationDate')
+    for book in books:
+        try:
+            comp = populate_comparison(book)
+            print("Result: %s" % comp)  
+        except:
+            traceback.print_exc()
+            continue
+
+def mark_top_comparisons():
+    Comparison.objects.all().update(top_find=False)
+    comps = Comparison.objects.filter(previous_better_new=True, previous_better_used=True).values_list('id', flat=True).order_by('rank')
+    count = comps.count()
+    comps = list(comps[0:count/10])  #get top 10% in sales rank
+    
+    #Get top ten in price difference
+    top_comps = Comparison.objects.filter(id__in=comps).annotate(i_sum=F('difference_new') + F('difference_used')).order_by('-i_sum')[0:10]
+    
+    
+    for comp in top_comps:
+        comp.top_find=True
+        comp.current_edition.save()
+        comp.save()
+        print (comp)
     
 def main(argv):
    action = ''
@@ -578,7 +661,10 @@ if __name__ == "__main__":
     #exit
     #print('Inventory')
     #data_cleanup.clean_book_by_asin('1118358538')
-    process_asin_slice('0763762997')
+    #process_asin_slice('103464249X')
+    #process_isbn13('9781412910040')
+    #make_comparisons()
+    mark_top_comparisons()
     #mark_tracked_books()
 
     

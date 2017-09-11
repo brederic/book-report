@@ -36,5 +36,6 @@
         
         <div>Publisher Information: {{ book.description | safe }}</div>
         {% else %}
-            <div>No current edition information in our database!</div>
+            <div>No {{ edition_type }} edition information in our database!</div>
         {% endif %} 
+    

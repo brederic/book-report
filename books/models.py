@@ -7,6 +7,8 @@ from django.db.models import Avg, Max, Min
 import mail
 from django.template.defaultfilters import escape
 from django.core.urlresolvers import reverse
+from django.template.defaultfilters import slugify
+
 
 getcontext().prec = 8
 
@@ -111,6 +113,7 @@ class Settings(models.Model):
 
 class Book(models.Model):
     title = models.CharField(max_length=100, blank=True)
+    slug = models.SlugField( max_length=150, blank=True)
     isbn = models.CharField(max_length=10, blank=True)
     isbn13 = models.CharField(max_length=13, blank=True)
     asin = models.CharField(max_length=14, unique=True, db_index=True)
@@ -176,21 +179,56 @@ class Book(models.Model):
             return str(self.get_bookscore().getPriceScore('1').highest_sold_price)
         return None
              
+    def current_rank (self):
+        if self.get_bookscore():
+            return self.get_bookscore().most_recent_rank
+        return None
+    
+             
     def current_price_new (self):
         if self.get_bookscore().getPriceScore('5').most_recent_price:
-            return str(self.get_bookscore().getPriceScore('5').most_recent_price)
+            return self.get_bookscore().getPriceScore('5').most_recent_price
         return None
     def current_price_used (self):
         if self.get_bookscore().getPriceScore('0').most_recent_price:
-            return str(self.get_bookscore().getPriceScore('0').most_recent_price)
+            return self.get_bookscore().getPriceScore('0').most_recent_price
         return None
         
     def is_current_edition (self):
+        target_date = (timezone.now()-datetime.timedelta(days=3*365)).date()
         if self.current_edition:
+            #print('This: %s Current Edition: %s'%(self, self.current_edition))
+            if self == self.current_edition:
+                return True
             if self.current_edition.publicationDate and self.publicationDate:
+                
                 if self.current_edition.publicationDate <= self.publicationDate:
                     # this is the current edition
                     return True
+                else:
+                    print("I'm older than the current edition. Self: %s Current Edition: %s"%( self.publicationDate, self.current_edition.publicationDate ))
+            else:
+                if self.publicationDate:
+                    if self.publicationDate >= target_date:
+                        if not self.is_previous_edition():
+                            return True
+                        else:
+                            print("I'm a previous edition")
+                    else:
+                        print("Book too old: %s"%self.publicationDate)
+
+                
+                print("No publication dates available. Self: %s Current Edition: %s"%( self.publicationDate, self.current_edition.publicationDate ))
+                
+        else:
+            try:
+                books = Book.objects.filter(current_edition=self)
+                if books:
+                    return True
+                else:
+                    print("No other books think I am the current edition")
+            except:
+                print("No current edition set")
         
         return False
         
@@ -201,13 +239,22 @@ class Book(models.Model):
         self.refresh_from_db()
         return self.previous_edition
         
+    def get_previous_edition(self):
+        previous_book = None
+        related_books = Book.objects.filter(current_edition=self).order_by('-publicationDate')
+        for book in related_books:
+            if not book.is_current_edition():
+                previous_book = book
+                break
+        return previous_book
+     
         
     new_edition_date.short_description = "Expiry Date"
     high_sale_price_new.short_description = "High New $"
     high_sale_price_used.short_description = "High Used $"
     
     def __str__(self):             
-        return self.title
+        return 'Book [%s (Edition: %s) - ASIN: %s]'%(self.title , self.edition, self.asin)
     
     def get_bookscore(self):
         scores = BookScore.objects.filter(book=self)
@@ -219,6 +266,13 @@ class Book(models.Model):
         else:
             score = scores[0]
         return score
+
+
+    def save(self, *args, **kwargs):
+        if not self.id or not self.slug:
+            #Only set the slug when the object is created.
+            self.slug = slugify(self.title) #Or whatever you want the slug to use
+        super(Book, self).save(*args, **kwargs)
 
 
     
@@ -411,6 +465,33 @@ class SalesRank(models.Model):
         index_together = [['rank_date', 'rank', 'book']]
     
 
+    
+        
+class Comparison(models.Model):
+    current_edition = models.ForeignKey(Book, db_index=True, related_name='current')
+    previous_edition = models.ForeignKey(Book, db_index=True, related_name='previous')
+    top_find = models.BooleanField(default=False)
+    previous_better_new = models.BooleanField(default=False)
+    savings_new = models.FloatField( blank=True, default=1.00, db_index=True) 
+    difference_new = models.FloatField( blank=True, default=1.00, db_index=True) 
+    previous_better_used = models.BooleanField(default=False)
+    savings_used = models.FloatField( blank=True, default=1.00, db_index=True) 
+    difference_used = models.FloatField( blank=True, default=1.00, db_index=True) 
+    votes = models.IntegerField(null=True)
+    rank = models.IntegerField(db_index=True)
+    def __str__(self):             
+        new_recommendation = "previous" if self.previous_better_new else "current"
+        used_recommendation = "previous" if self.previous_better_used else "current"
+        return "[Comparison for %s  :\nNew: Save $%.2f (%.0f%%) when you buy the %s edition. \nUsed: Save $%.2f (%.0f%%) when you buy the %s edition." % (self.current_edition.title, 
+                self.difference_new, self.savings_new, new_recommendation, 
+                self.difference_used, self.savings_used, used_recommendation)  
+    @models.permalink
+    def get_absolute_url(self):
+            return reverse('books.comparison', kwargs= {
+                'slug': self.current_edition.slug,
+                'id': self.id,
+            })
+            
            
     
         
@@ -418,10 +499,14 @@ class BookScore(models.Model):
     book = models.ForeignKey(Book, db_index=True)
     score_time = models.DateTimeField(null=True, db_index=True) 
     rolling_salesrank_score = models.FloatField( blank=True, default=1.00)
+    most_recent_rank = models.ForeignKey(SalesRank, null=True, db_index=True)
     
     def update_rolling_salesrank (self):
+        #print('update_rolling_salesrank')
         settings = Settings.objects.all()[0]
         sales_rank_date = timezone.now()-datetime.timedelta(days=settings.sales_rank_delta)
+        self.most_recent_rank = SalesRank.objects.filter(book=self.book).order_by('-rank_date')[0]
+        
 
         ave_sales_rank = SalesRank.objects.filter(book=self.book, rank_date__gte=sales_rank_date).aggregate(avg_sr=Avg('rank'))['avg_sr']
         if ave_sales_rank:

@@ -1,0 +1,11 @@
+{% load staticfiles %}
+{% load humanize %}
+
+    <ul>
+    {% for compare in compare_list %}
+        <li><a href="{% url 'books:comparison' compare.current_edition.slug  compare.id %}"> 
+            <img src='{{compare.current_edition.imageLink}}' class='search' >
+            {{ compare.current_edition.title }} -  Potential Savings: New ${{ compare.difference_new }} ({{compare.savings_new|floatformat:"0"|intcomma}}%);
+             Used ${{ compare.difference_used }} ({{compare.savings_used|floatformat:"0"|intcomma}}%)  </a></li>
+    {% endfor %}
+    </ul>
