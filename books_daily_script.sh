@@ -1,5 +1,5 @@
 #! /bin/bash    
-cd ~/Projects/test_env
+cd ~/Projects/prod
 source bin/activate
 
 cd ../book_report

@@ -558,8 +558,8 @@ def check_stuff():
         print(str(book.current_edition.edition))
     
 def clear_edition():
-   book = Book.objects.get(asin='1259870499')
-   book.current_edition=book
+   book = Book.objects.get(isbn13='9781285177199')
+   book.current_edition=Book.objects.get(asin='1305633784')
    book.freeze_edition=True
    book.save()
     
@@ -573,7 +573,7 @@ def stuff():
     
     
     
-stuff()
+clear_edition()
         
     
         
