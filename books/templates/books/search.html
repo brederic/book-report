@@ -4,7 +4,22 @@
 
 {% block main_col %}
 
+<div class="panel panel-default">
+  <!-- Default panel contents -->
+  <div class="panel-heading">Search Results</div>
+  <div class="panel-body">
+    <p>You searched for "{{ query_string }}" and the results are listed below. </p>
+  </div>
 
+<!-- List group -->
+  <ul class="list-group">
+   {% for book in found_entries %}
+        {% if book.current_edition %}
+            <li class="list-group-item"> <a href="{% url 'books:compare' book.id %}"><img src='{{book.imageLink}}' class='search' > <strong>{{ book.title }}</strong> (Edition: {{book.edition}}) </a></li>
+        {% endif %}
+    {% endfor %}
+  </ul>
+</div>
        
 You searched for "{{ query_string }}" and the results are listed below.
     <ul>

@@ -1,11 +1,24 @@
 {% load staticfiles %}
 {% load humanize %}
+<div class="panel panel-default">
+  <!-- Default panel contents -->
+  <div class="panel-heading">Today's Biggest Savings</div>
+  <div class="panel-body">
+    <p>Below are a list of books and how much you would save if you purchased the previous edition instead of the newest edition.</p>
+  </div>
 
-    <ul>
-    {% for compare in compare_list %}
-        <li><a href="{% url 'books:comparison' compare.current_edition.slug  compare.id %}"> 
-            <img src='{{compare.current_edition.imageLink}}' class='search' >
-            {{ compare.current_edition.title }} -  Potential Savings: New ${{ compare.difference_new }} ({{compare.savings_new|floatformat:"0"|intcomma}}%);
-             Used ${{ compare.difference_used }} ({{compare.savings_used|floatformat:"0"|intcomma}}%)  </a></li>
+  <!-- Table -->
+  <table class="table">
+      <thead><tr><th>Title</th><th>Savings New</th><th>Savings Used</th></tr></thead>
+
+      <tbody>
+                {% for compare in compare_list %}
+    <tr>
+         <td> <a href="{% url 'books:comparison' compare.current_edition.slug  compare.id %}"><img src='{{compare.current_edition.imageLink}}' class='search' > {{ compare.current_edition.title }}</a></td>
+         <td>${{ compare.difference_new|floatformat:"2"|intcomma }} ({{compare.savings_new|floatformat:"0"|intcomma}}%)</td>
+         <td>${{ compare.difference_used|floatformat:"2"|intcomma }} ({{compare.savings_used|floatformat:"0"|intcomma}}%)</td></tr>
     {% endfor %}
-    </ul>
+    </tbody>
+  </table>
+</div>
+

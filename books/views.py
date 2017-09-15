@@ -107,6 +107,7 @@ def comparison(request, slug, id):
             previous_price=previous_price[0]
         
     context =  {
+        'compare': comparison,
         'current_book': current_book,
         'previous_book': previous_book,
         'current_price': current_price,
@@ -123,6 +124,7 @@ def compare(request, book_id):
         current_book = book.current_edition
     else:
         current_book = book
+    comparison = Comparison.objects.get(current_edition=current_book.id)
     previous_book = None
     previous_price=None
     previous_psrice_used=None
@@ -148,6 +150,7 @@ def compare(request, book_id):
             previous_price=previous_price[0]
         
     context =  {
+        'compare': comparison,
         'current_book': current_book,
         'previous_book': previous_book,
         'current_price': current_price,

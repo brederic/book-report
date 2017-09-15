@@ -3,11 +3,11 @@
 {% block title %}{{ current_book.title }} | {{ block.super }}{% endblock %}
 
 {% block main_col %}
-    {% include "books/_book_compare.html" with book=current_book edition_type='Current' price_new=current_price price_used=current_price_used %}
+    {% include "books/_book_compare.html" with book=current_book edition_type='Current'  opposite='Previous' price_new=current_price price_used=current_price_used %}
 {% endblock %}
 
 {% block side_col %}
-    {% include "books/_book_compare.html" with book=previous_book edition_type='Previous' price_new=previous_price price_used=previous_price_used %}
+    {% include "books/_book_compare.html" with book=previous_book edition_type='Previous'  opposite='Current' price_new=previous_price price_used=previous_price_used %}
 {% endblock %}
 
 

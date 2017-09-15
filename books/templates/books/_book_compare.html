@@ -1,40 +1,88 @@
+{% load staticfiles %}
+{% load humanize %}
        {% if book %}
-        <a href="http://amazon.com/dp/{{book.asin}}?tag={{ affiliate }}"><h1>{{ edition_type }} Edition - ${{ price_new.price }}</h1></a>
-        <figure>
-          <a href="http://amazon.com/dp/{{book.asin}}?tag={{ affiliate }}"><img class="compare" src="
-            {% if book.largeImageLink %}
-                {{ book.largeImageLink }}
-            {% else %}
-                {% if book.mediumImageLink  %}
-                    {{ book.mediumImageLink }}
-                {% else %}
-                     {{ book.imageLink }}
-                {% endif %}
-            {% endif %}
-            " alt="{{ book.title }}" ></a>
-          <figcaption>{{ book.title }} (Edition: {{book.edition}})</figcaption>
-        </figure> 
-        <div><a href="http://amazon.com/dp/{{book.asin}}?tag={{ affiliate }}">View on Amazon</a></div>
-        {% if book.process_now %}
-            Price data is currently updating.?tag={{ affiliate }}
-        {% else %}
-            <form method="post" action="{% url 'books:update' book.id %}">
-                {% csrf_token %}
-                <input type="hidden" name="q" id="id_q" value="{{ book.id }}"/>
-                <input type="submit" value="Update"/>
-            </form>
-         {% endif %}
-       <ul>
-            <li>ISBN: {{ book.isbn13 }}</li>
-            <li>Published: {{ book.publicationDate }}</li>
-            <li>Pages: {{ book.page_count }}</li>
-            <li>New Price: ${{ price_new.price }} <small>as of {{ price_new.price_date }} </small> </li>
-            <li>Used Price: ${{ price_used.price }}  <small>as of {{ price_used.price_date }}</small></li>
-            
-            
-        </ul>
+       
+<div class="panel panel-default">
+  <!-- Default panel contents -->
+  <div class="panel-heading">{{ edition_type }} Edition</div>
+  <div class="panel-body">
         
-        <div>Publisher Information: {{ book.description | safe }}</div>
+          <!-- Default panel contents -->
+          <div class="row">
+          <div class="col-md-6 {{opposite}}">
+            <div class="panel panel-default ">
+              <!-- Default panel contents -->
+              <div class="panel-heading ">Price <small><small><small>as of {{ price_new.price_date }} </small></small></small></p></div>
+              <div class="panel-body">
+                <ul class="list-group">
+                    <li class="list-group-item">New: ${{ price_new.price }} 
+                        {% if edition_type == 'Previous' and compare.previous_better_new%}
+                            <img src='{% static "books/Logo.png" %}' height='30px'> <p>Save ${{compare.difference_new|floatformat:"2"|intcomma}} ({{compare.savings_new|floatformat:"0"|intcomma}}%)</p>
+                        {% elif edition_type == 'Previous'%}
+                            <img src='{% static "books/Logo.png" %}' height='30px'> <p>Save ${{compare.difference_new|floatformat:"2"|intcomma}} ({{compare.savings_new|floatformat:"0"|intcomma}}%)</p>
+                        {% endif %}</li>
+                    <li class="list-group-item">Used: ${{ price_used.price }}
+                            {% if edition_type == 'Previous' and compare.previous_better_used%}
+                            <img src='{% static "books/Logo.png" %}' height='30px'> <p>Save ${{compare.difference_used|floatformat:"2"|intcomma}} ({{compare.savings_used|floatformat:"0"|intcomma}}%)</p>
+                        {% elif edition_type == 'Previous'%}
+                            <img src='{% static "books/Logo.png" %}' height='3s0px'> <p>Save ${{compare.difference_used|floatformat:"2"|intcomma}} ({{compare.savings_used|floatformat:"0"|intcomma}}%)</p>
+                        {% endif %}  </li>
+                
+            
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6 {{edition_type}}">
+                <figure >
+                  <a href="http://amazon.com/dp/{{book.asin}}?tag={{ affiliate }}"><img class='compare' src="
+                    {% if book.largeImageLink %}
+                        {{ book.largeImageLink }}
+                    {% else %}
+                        {% if book.mediumImageLink  %}
+                            {{ book.mediumImageLink }}
+                        {% else %}
+                             {{ book.imageLink }}
+                        {% endif %}
+                    {% endif %}
+                    " alt="{{ book.title }}" ></a>
+                  <figcaption class='{{edition_type}}'><strong>{{ book.title }}</strong> (Edition: {{book.edition}})</figcaption>
+          
+        </figure> 
+        <div ><a href="http://amazon.com/dp/{{book.asin}}?tag={{ affiliate }}"><img src='{% static "books/buy4.gif" %}'></a> (Affiliate link)</div>
+
+          </div>
+        </div>
+    
+     
+        <div> <p>  &nbsp;</p> </div>
+        <div class="panel panel-default">
+          <!-- Default panel contents -->
+          <div class="panel-heading">Details</div>
+          <div class="panel-body">
+            <ul class="list-group">
+                <li class="list-group-item">ISBN: {{ book.isbn13 }}</li>
+                <li class="list-group-item">Published: {{ book.publicationDate }}</li>
+                <li class="list-group-item">Pages: {{ book.page_count }}</li>
+                <li class="list-group-item">New Price: ${{ price_new.price }} <small>as of {{ price_new.price_date }} </small> </li>
+                <li class="list-group-item">Used Price: ${{ price_used.price }}  <small>as of {{ price_used.price_date }}</small></li>
+            
+            
+                </ul>
+          </div>
+        </div>
+          
+        <div class="panel panel-default">
+          <!-- Default panel contents -->
+          <div class="panel-heading">Publisher Information</div>
+          <div class="panel-body">
+            {{ book.description | safe }}
+          </div>
+        </div>
+
+  </div>
+</div>
+       
         {% else %}
             <div>No {{ edition_type }} edition information in our database!</div>
         {% endif %} 
