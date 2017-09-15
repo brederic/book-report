@@ -12,7 +12,7 @@
           <div class="col-md-6 {{opposite}}">
             <div class="panel panel-default ">
               <!-- Default panel contents -->
-              <div class="panel-heading ">Price <small><small><small>as of {{ price_new.price_date }} </small></small></small></p></div>
+              <div class="panel-heading ">Price <small><small><small>as of {{ price_new.price_date }} <a href="#"  data-toggle="tooltip" title="{% include 'books/_amazon_price_disclosure.html' %}">Details</a></small></small></small></p></div>
               <div class="panel-body">
                 <ul class="list-group">
                     <li class="list-group-item">New: ${{ price_new.price }} 
@@ -64,8 +64,8 @@
                 <li class="list-group-item">ISBN: {{ book.isbn13 }}</li>
                 <li class="list-group-item">Published: {{ book.publicationDate }}</li>
                 <li class="list-group-item">Pages: {{ book.page_count }}</li>
-                <li class="list-group-item">New Price: ${{ price_new.price }} <small>as of {{ price_new.price_date }} </small> </li>
-                <li class="list-group-item">Used Price: ${{ price_used.price }}  <small>as of {{ price_used.price_date }}</small></li>
+                <li class="list-group-item">New Price: ${{ price_new.price }} <small>as of {{ price_new.price_date }} <a href="#"  data-toggle="tooltip" title="{% include 'books/_amazon_price_disclosure.html' %}">Details</a></small> </li>
+                <li class="list-group-item">Used Price: ${{ price_used.price }}  <small>as of {{ price_used.price_date }} <a href="#"  data-toggle="tooltip" title="{% include 'books/_amazon_price_disclosure.html' %}">Details</a></small></li>
             
             
                 </ul>

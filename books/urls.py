@@ -18,6 +18,7 @@ urlpatterns = [
     url(r'^(?P<book_id>[0-9]+)/compare/$', views.compare, name='compare'),
     url(r'^(?P<book_id>[0-9]+)/update/$', views.update, name='update'),
     url(r'^search$', views.search, name='search'),
+    url(r'^affiliate$', views.affiliate, name='affiliate'),
     url(r'^(?P<slug>[-\w\d]+),(?P<id>\d+)/$', view=views.comparison, name='comparison'),
 
 ]

@@ -77,5 +77,5 @@ def send(toaddrs, msg):
             time.sleep(5)
         
 # test
-sendEmail('test', 'This is a test')
+#sendEmail('test', 'This is a test')
 #send_check_book('test', 'This is a test')
