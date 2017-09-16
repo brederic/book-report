@@ -81,8 +81,8 @@ WSGI_APPLICATION = 'book_report.wsgi.application'
 # https://docs.djangoproject.com/en/1.8/ref/settings/#databases
 
 DATABASES = {
-    'prod': {
- # 'default': {
+ #   'prod': {
+  'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'brent_books',
         'USER': 'brent_bookuser',
@@ -93,8 +93,8 @@ DATABASES = {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         }
     },
-  #  'test': {
-  'default': {
+    'test': {
+  #'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'books',
         'USER': 'bookuser',

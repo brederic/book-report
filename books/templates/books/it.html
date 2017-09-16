@@ -1,0 +1,73 @@
+{% extends "books/__l_90_10.html" %}
+{% load staticfiles %}
+
+{% block title %}Urgent College Safety Alert | {{ block.super }}{% endblock %}
+
+
+
+{% block main_col %}
+
+<h1>Urgent College Safety Alert!</h1>
+
+<p>On university campuses across America, reports are skyrocketing of students
+disappearing into sewer drains, lured by a mysterious clown-like figure offering 
+free textbooks.  Don't let IT happen to you! </p>
+
+<img src='{% static "books/IT.png" %}' >
+<p>It was 3:37 pm last Tuesday when Julie Stephens, a sophomore attending Miami Dade College, received a troubling text from her roommate, Heather Furman.
+"Heather had really been worried about how she was going to pay for her textbooks this term." Julie told us. 
+"But after my last class dismissed, she texted me saying. 'Who knew you could get free textbooks in the sewer?' I rushed home just 
+in time to see her lowering herself into the storm drain outside our apartment building. I haven't see her since! I'm really worried!"</p>
+
+<p>Julie is not alone. Ross Simpworth has a son, Rob, studying Business Management at Texas A&M University.  We reached Ross by phone:</p>
+<p>"Rob's been calling letting me know that he needs a $240 textbook.  I told him that I'd send him money as soon as I got paid.
+But then, he left a voicemail telling us not to worry about it, he'd found someone on campus who could get him the book for free.
+I was worried that he was planning to download an illegal pdf off the internet, I never would have guessed he'd stuck some evil 
+bargain with a sewer-dwelling clown! I'll never forgive myself for what has happened!"</p>
+
+
+<h2>How to Protect Yourself and the College Students you Care About</h2>
+<p>As a public service, <a href='http://whichedition.com'>WhichEdition</a> has developed the following safety tips:
+<ul>
+    <li><b>Don't buy textbooks at the university bookstore:</b> High textbook 
+prices at the on-campus bookstore can trigger distress and high levels of susceptibility 
+to sewer temptations. </li>
+    <li><b>Comparison shop online:</b> Don't assume your favorite online store has 
+    the best prices. Use a comparison site like <a href='http://uselibby.com'>Libby</a> to get the best online price</li>
+    <li><b>Save big buying a previous edition textbook:</b> No clown will be able to get you
+    into the sewer if you just saved over 90% buying a previous edition textbook.  <a href='http://whichedition.com'>WhichEdition.com</a>
+    can help you.  Check out some of the best deals available on prior edition textbooks today.  Then use the search box at the top of the page to find 
+    the textbook you need.</li>
+
+</ul>
+
+{% include "books/_compare_list.html" %}
+    
+   
+{% endblock %}
+
+{% block side_col %}
+   <div class="row">
+    <a href="https://www.facebook.com/sharer/sharer.php?u=http%3A//whichedition.com/books/warning"><img width='50' src='{%static "books/Social Media Icons/PNG/Circle Color/Facebook.png"%}'></a>
+    </div>
+    <div class="row">
+    <a href="https://twitter.com/home?status=URGENT%20COLLEGE%20SAFETY%20ALERT!%20Don't%20let%20IT%20happen%20to%20you!%20https%3A//goo.gl/XSSNuY%20%23CollegeLife%20%23CollegeProblems"><img width='50' src='{%static "books/Social Media Icons/PNG/Circle Color/Twitter.png"%}'></a>
+    </div>
+        <div class="row">
+    <a href="https://plus.google.com/share?url=http%3A//whichedition.com/books/warning"><img width='50' src='{%static "books/Social Media Icons/PNG/Circle Color/Google+.png"%}'></a>
+    </div>
+    <div class="row">
+    <a href="https://www.linkedin.com/shareArticle?mini=true&url=http%3A//whichedition.com/books/warning&title=URGENT%20COLLEGE%20SAFETY%20WARNING!&summary=On%20university%20campuses%20across%20America,%20reports%20are%20skyrocketing%20of%20students%0Adisappearing%20into%20sewer%20drains,%20lured%20by%20a%20mysterious%20clown-like%20figure%20offering%20%0Afree%20textbooks.%20%20Don't%20let%20IT%20happen%20to%20you!%20Click%20the%20link%20for%20safety%20tips%20and%20share%20to%20save%20your%20friends!&source="><img width='50' src='{%static "books/Social Media Icons/PNG/Circle Color/Linkedin.png"%}'></a>
+    </div>
+    <div class="row">
+    <a href="https://pinterest.com/pin/create/button/?url=WhichEdition.com&media=http%3A//whichedition.com/static/books/IT.png&description=On%20university%20campuses%20across%20America,%20reports%20are%20skyrocketing%20of%20students%0Adisappearing%20into%20sewer%20drains,%20lured%20by%20a%20mysterious%20clown-like%20figure%20offering%20%0Afree%20textbooks.%20%20Don't%20let%20IT%20happen%20to%20you!%20Click%20the%20link%20for%20safety%20tips%20and%20pin%20to%20save%20your%20friends!%20http%3A//whichedition.com/books/warning"><img width='50' src='{%static "books/Social Media Icons/PNG/Circle Color/Pinterest.png"%}'></a>
+    </div>
+    <div class="row">
+    <a href="mailto:?&subject=URGENT COLLEGE SAFETY WARNING!&body=On%20university%20campuses%20across%20America,%20reports%20are%20skyrocketing%20of%20students%0Adisappearing%20into%20sewer%20drains,%20lured%20by%20a%20mysterious%20clown-like%20figure%20offering%20%0Afree%20textbooks.%20%20Don't%20let%20IT%20happen%20to%20you!%20Click%20the%20link%20for%20safety%20tips%20and%20share%20to%20save%20your%20friends!%0Ahttp%3A//whichedition.com/books/warning%0A%0Ahttp%3A//whichedition.com/static/books/IT.png">Send Email</a>
+    </div>
+{% endblock %}
+
+
+<!--<header><img id='banner' src="% static "books/we_banner.png" %" alt="WHICH EDITION"/>
+WhichEdition Header - {{ current_book.title }}</header> -->
+

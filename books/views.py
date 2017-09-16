@@ -34,6 +34,14 @@ def affiliate(request):
         
     }
     return render(request, 'books/affiliate.html', context)
+        
+def it(request):
+    compare_list = Comparison.objects.filter(top_find=True).order_by('rank')
+    context =  {
+        'compare_list': compare_list,
+        
+    }
+    return render(request, 'books/it.html', context)
 import re
 
 from django.db.models import Q

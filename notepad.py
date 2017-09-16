@@ -563,17 +563,18 @@ def clear_edition():
    book.freeze_edition=True
    book.save()
     
-def stuff():
-    compare = Comparison.objects.get(pk='2591')
-    compare.current_edition.save()
-    compare.previous_edition.save()
-    print(str(compare.current_edition.slug))
-    print(str(compare.previous_edition.slug))
-    print(str(compare.get_absolute_url()))
+def generateSiteMap():
+    print('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
+    compares = Comparison.objects.all()
+    for compare in compares:
+        compare.current_edition.save()
+        compare.previous_edition.save()
+        print("<url><loc>http://whichedition.com/books/%s,%s</loc></url>"%(compare.current_edition.slug,compare.id))
+    print('</urlset >')
     
     
     
-clear_edition()
+generateSiteMap()
         
     
         
