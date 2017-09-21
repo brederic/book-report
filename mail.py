@@ -2,6 +2,9 @@ import smtplib
 import time
 from email.mime.text import MIMEText
 
+with open('/etc/prod/secrets/mail_cred.txt') as f:
+    password = f.read().strip()
+
 
 
 check_book_addrs = ['x+226502906786752@mail.asana.com', 'sarah@brentnrachel.com']
@@ -41,7 +44,6 @@ def sendEmailTo(toaddrs, subject, msg):
 def sendIt(sender, recipients, subject, body):
     # Credentials (if needed)
     username = 'brederic@gmail.com'
-    password = 'd3st1n0!'
     s = smtplib.SMTP('smtp.gmail.com:587')
     s.set_debuglevel(1)
     s.starttls()
@@ -60,7 +62,6 @@ def send(toaddrs, msg):
 
     # Credentials (if needed)
     username = 'brederic@gmail.com'
-    password = 'd3st1n0!'
 
     # The actual mail send
     success = False

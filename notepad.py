@@ -558,8 +558,8 @@ def check_stuff():
         print(str(book.current_edition.edition))
     
 def clear_edition():
-   book = Book.objects.get(isbn13='9781285177199')
-   book.current_edition=Book.objects.get(asin='1305633784')
+   book = Book.objects.get(isbn13='9781457670251')
+   book.current_edition=Book.objects.get(asin='1319056636')
    book.freeze_edition=True
    book.save()
     
@@ -571,12 +571,16 @@ def generateSiteMap():
         compare.previous_edition.save()
         print("<url><loc>http://whichedition.com/books/%s,%s</loc></url>"%(compare.current_edition.slug,compare.id))
     print('</urlset >')
+     
+def cancel_top_find(isbn):
+   compare = Comparison.objects.get(current_edition__isbn13 = isbn)
+   compare.top_find = False
+   compare.save()   
     
-    
-    
-generateSiteMap()
+clear_edition()
+#generateSiteMap()
         
-    
+#cancel_top_find('9781457670251')    
         
 
 #find_sold_prices()

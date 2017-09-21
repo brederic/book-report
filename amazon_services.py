@@ -490,21 +490,25 @@ def processAmazonBook(item, do_price):
             book.save()
     try:
         if (item.ISBN):
-            book.isbn = item.ISBN.string
-            try:
-                book.isbn13 = convert_10_to_13(book.isbn)
-            except AssertionError as e:
-                print("AssertionError in processAmazonBook {0}".format(e))
-                traceback.print_exc()
-                
+            if len(item.ISBN.string) == 10:
+                book.isbn = item.ISBN.string
+                try:
+                    book.isbn13 = convert_10_to_13(book.isbn)
+                except AssertionError as e:
+                    print("AssertionError in processAmazonBook {0}".format(e))
+                    traceback.print_exc()
+            elif len(item.ISBN.string) == 13:
+                book.isbn13 = item.ISBN.string
+            else:
+                print("Error: Unexpected ISBN format: %s"%(item.ISBN.string))
         else:
             book.isbn = book.asin
         book.title = item.Title.string[0:100]
         if (item.Author):
-            book.author = item.Author.string
+            book.author = item.Author.string[0:50]
         else:
             if (item.Creator):
-                book.author = item.Creator.string
+                book.author = item.Creator.string[0:50]
         if (item.SmallImage):
             book.imageLink = item.SmallImage.URL.string
         if (item.MediumImage):
@@ -518,7 +522,7 @@ def processAmazonBook(item, do_price):
         if (item.Binding):
             book.binding = item.Binding.string[0:15]
         if (item.Edition):
-            book.edition = item.Edition.string
+            book.edition = item.Edition.string[0:30]
         if item.NumberOfPages:
             book.page_count = item.NumberOfPages.string
         else:

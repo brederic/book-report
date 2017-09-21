@@ -566,7 +566,11 @@ def populate_comparison(current):
             return
     previous = comp.previous_edition
     #print('Curreent: %s, Previous: %s'%(current.current_price_new(),previous.current_price_new()))
-    comp.difference_new = current.current_price_new().price - previous.current_price_new().price
+    try:
+        comp.difference_new = current.current_price_new().price - previous.current_price_new().price
+    except:
+        print("Incomplete price information.")
+        return
     if comp.difference_new < 0:
         comp.previous_better_new = False
         comp.difference_new = -comp.difference_new
@@ -576,9 +580,12 @@ def populate_comparison(current):
         comp.savings_new = comp.difference_new*100/current.current_price_new().price
         
     # USED
-     
-    comp.difference_used = min(current.current_price_used().price, current.current_price_new().price) - \
-        min(previous.current_price_used().price, previous.current_price_new().price)
+    try: 
+        comp.difference_used = min(current.current_price_used().price, current.current_price_new().price) - \
+            min(previous.current_price_used().price, previous.current_price_new().price)
+    except:
+        print("Incomplete price information.")
+        return
     if comp.difference_used < 0:
         comp.previous_better_used = False
         comp.difference_used = -comp.difference_used
@@ -661,8 +668,8 @@ if __name__ == "__main__":
     exit
     #print('Inventory')
     #data_cleanup.clean_book_by_asin('1118358538')
-    process_asin_slice('0131038052')
-    #process_isbn13('9780323023641')
+    #process_asin_slice('0131038052')
+    process_isbn13('9780534251048')
     #make_comparisons()
     #mark_top_comparisons()
     #mark_tracked_books()
