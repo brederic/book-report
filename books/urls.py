@@ -21,5 +21,6 @@ urlpatterns = [
     url(r'^affiliate$', views.affiliate, name='affiliate'),
     url(r'^warning$', views.it, name='it'),
     url(r'^(?P<slug>[-\w\d]+),(?P<id>\d+)/$', view=views.comparison, name='comparison'),
+    url(r'^(?P<slug>[-\w\d]+),(?P<id>\d+)/report/$', view=views.report, name='report'),
 
 ]

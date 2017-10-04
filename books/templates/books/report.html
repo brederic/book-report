@@ -1,0 +1,86 @@
+{% extends "books/__l_one_col.html" %}
+{% load humanize %}
+
+
+{% block title %}{{ current_book.title }} Report| {{ block.super }}{% endblock %}
+{% block javascript %}{{ block.super }}
+    <script type="text/javascript">
+    $(document).ready(function(){
+        $('[data-toggle="tooltip"]').tooltip();   
+    });
+    </script>
+{% endblock %}
+
+
+{% block main_col %}
+<h2>Edition Comparison Report for "{{ current_book.title }}"</h2>
+<h4>Current Edition</h4>
+<p><img src="{{ compare.current_edition.imageLink }}"  > <strong>{{ compare.current_edition.title }}</strong> (Edition: {{compare.current_edition.edition}})
+    ISBN: {{ compare.current_edition.isbn13 }}</p>
+<h4>Previous Edition</h4>
+<p><img src="{{ compare.previous_edition.imageLink }}"  > <strong>{{ compare.previous_edition.title }}</strong> (Edition: {{compare.previous_edition.edition}})
+    ISBN: {{ compare.previous_edition.isbn13 }}</p>
+<h3>Price Report</h3>
+<p>What follows is a report on the best prices available on Amazon.com for each edition and condition.  {% include 'books/_amazon_price_disclosure.html' %} </p>
+<h4>New</h4>
+    <P>Current Edition: ${{current_price.price|floatformat:"2"|intcomma}} <small> as of {{ current_price.price_date }} </small> </P>
+    <p>Previous Edition: ${{previous_price.price|floatformat:"2"|intcomma}}  <small> as of {{ previous_price.price_date }} </small> </p>
+    <!-- Previous Edition is significantly better -->
+    {% if compare.previous_better_new and compare.savings_new > 20 %}
+        <p>You can save ${{compare.difference_new|floatformat:"2"|intcomma}} ({{compare.savings_new|floatformat:"0"|intcomma}}%) purchasing the previous edition of 
+        the textbook in new condition. You should strongly consider the previous edition if you are in the market for a new copy of this textbook.</p>
+    {% elif  compare.previous_better_new %}
+        <p>The previous edition is slightly less expensive in new condition but not significantly so.</p> 
+    {% else %}
+        <p>The current edition currently has the best price for books in new condition. There is no reason to consider the previous edition.</p>
+    {% endif %}
+<h4>Used</h4>
+    <P>Current Edition: ${{current_price_used.price|floatformat:"2"|intcomma}}  <small> as of {{ current_price_used.price_date }} </small></P>
+    <p>Previous Edition: ${{previous_price_used.price|floatformat:"2"|intcomma}}  <small> as of {{ previous_price_used.price_date }} </small> </p>
+    <!-- Previous Edition is significantly better -->
+    {% if compare.previous_better_used and compare.savings_used > 20 %}
+        <p>You can save ${{compare.difference_used|floatformat:"2"|intcomma}} ({{compare.savings_used|floatformat:"0"|intcomma}}%) purchasing the 
+        previous edition of the textbook in used condition. You should strongly consider the previous edition if you are in the market for a used copy of this textbook.</p>
+    {% elif  compare.previous_better_new %}
+        <p>The previous edition is slightly less expensive in used condition but not significantly so.</p> 
+    {% else %}
+        <p>The current edition currently has the best price for books in used condition. There is no reason to consider the previous edition.</p>
+    {% endif %}
+<h3>Publication Date Report</h3>
+   <P>Current Edition: {{compare.current_edition.publicationDate}}</P>
+   <p>Previous Edition: {{compare.previous_edition.publicationDate}}</p>
+    <p>The previous edition is {{compare.previous_edition.publicationDate | timesince }} old. The previous edition is {{compare.previous_edition.publicationDate | timesince:compare.current_edition.publicationDate}} older than the current edition. </p>
+
+    {% if compare.assess_pub_date_delta == "Short" %}
+    {% elif compare.assess_pub_date_delta == "Long"  %}
+    {% else %}
+    {% endif %}
+ <h3>Page Count Report</h3>
+   <P>Current Edition: {{compare.current_edition.page_count}}</P>
+   <p>Previous Edition: {{compare.previous_edition.page_count}}</p>
+    <p>The previous edition has
+    {% if compare.page_count_delta == 0 %} the same number of 
+    {% else %} {{compare.page_count_delta}} ({{compare.page_count_diff|floatformat:"0"|intcomma}}%) {% if compare.current_edition_has_more_pages %} fewer {% else %} more {% endif %} 
+    {% endif %} pages {% if compare.page_count_delta == 0 %} as 
+    {% else %} than {% endif %} the current edition.</p>
+ 
+<h3>Content Report</h3>
+<p>The publisher notes for each edition of this textbook are provided for your reference.  They sometimes provide an indication of what has changed from one edition to the next.</p>
+<h4>Current Edition Publisher's Notes</h4>
+<div>{{ compare.current_edition.description | safe  }}</div>
+
+<h4>Previous Edition Publisher's Notes</h4>
+<div>{{ compare.previous_edition.description| safe  }}</div>
+    
+
+
+
+
+    
+{% endblock %}
+
+
+
+<!--<header><img id='banner' src="% static "books/we_banner.png" %" alt="WHICH EDITION"/>
+WhichEdition Header - {{ current_book.title }}</header> -->
+

@@ -491,6 +491,21 @@ class Comparison(models.Model):
                 'slug': self.current_edition.slug,
                 'id': self.id,
             })
+    def current_edition_has_more_pages(self):
+        return self.current_edition.page_count > self.previous_edition.page_count
+    def page_count_delta(self):
+        return abs(self.current_edition.page_count - self.previous_edition.page_count)
+    def page_count_diff(self):
+        return 100.0 * self.page_count_delta()/self.current_edition.page_count
+    def pub_date_delta(self):
+        return self.current_edition.publicationDate - self.previous_edition.publicationDate
+    def assess_pub_date_delta(self):
+        if self.pub_date_delta()<=3*365:
+            return "Short"
+        elif self.pub_date_delta()>=5*365:
+            return "Long"
+        else:
+            return "Medium"
             
            
     

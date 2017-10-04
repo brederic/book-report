@@ -133,6 +133,46 @@ def comparison(request, slug, id):
         'affiliate': aws_config.AWS_USER,
     }
     return render(request, 'books/compare.html', context)
+
+def report(request, slug, id):
+    comparison = get_object_or_404(Comparison, pk=id)   
+    current_book  =  get_object_or_404(Book, pk=comparison.current_edition.id)
+    previous_book = comparison.previous_edition                    
+    previous_book = None
+    previous_price = None
+    previous_price_used=None
+    previous_book = current_book.get_previous_edition()
+    current_price = Price.objects.filter(condition='5', book=current_book).order_by('-price_date')
+    if len(current_price) > 0:
+        current_price=current_price[0]
+    else:
+        current_price=None
+        
+    current_price_used = Price.objects.filter(condition='0', book=current_book).order_by('-price_date')
+    if len(current_price_used) > 0:
+        current_price_used=current_price_used[0]
+    else:
+        current_price_used=None
+
+    if previous_book:
+        previous_price_used = Price.objects.filter(condition='0', book=previous_book).order_by('-price_date')
+        if len(previous_price_used) > 0:
+            previous_price_used=previous_price_used[0]
+        previous_price = Price.objects.filter(condition='5', book=previous_book).order_by('-price_date')
+        if len(previous_price) > 0:
+            previous_price=previous_price[0]
+        
+    context =  {
+        'compare': comparison,
+        'current_book': current_book,
+        'previous_book': previous_book,
+        'current_price': current_price,
+        'previous_price': previous_price,
+        'current_price_used': current_price_used,
+        'previous_price_used': previous_price_used,
+        'affiliate': aws_config.AWS_USER,
+    }
+    return render(request, 'books/report.html', context)
         
 def compare(request, book_id):
     book = get_object_or_404(Book, pk=book_id)

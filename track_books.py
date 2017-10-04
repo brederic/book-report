@@ -663,15 +663,15 @@ def main(argv):
 
 if __name__ == "__main__":
     #scanCamelBooks()
-    main(sys.argv[1:])
-    print("Track books activity completed.")
-    exit
+    #main(sys.argv[1:])
+    #print("Track books activity completed.")
+    #exit
     #print('Inventory')
     #data_cleanup.clean_book_by_asin('1118358538')
     #process_asin_slice('0131038052')
-    process_isbn13('9780534251048')
-    #make_comparisons()
-    #mark_top_comparisons()
+    process_isbn13('9780130455161')
+    make_comparisons()
+    mark_top_comparisons()
     #mark_tracked_books()
 
     

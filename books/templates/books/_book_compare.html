@@ -15,18 +15,18 @@
               <div class="panel-heading ">Price <small><small><small>as of {{ price_new.price_date }} <a href="#"  data-toggle="tooltip" title="{% include 'books/_amazon_price_disclosure.html' %}">Details</a></small></small></small></p></div>
               <div class="panel-body">
                 <ul class="list-group">
-                    <li class="list-group-item">New: ${{ price_new.price }} 
+                    <li class="list-group-item">New: <a href="http://amazon.com/dp/{{book.asin}}?tag={{ affiliate }}">${{ price_new.price }} 
                         {% if edition_type == 'Previous' and compare.previous_better_new%}
                             <img src='{% static "books/Logo.png" %}' height='30px'> <p>Save ${{compare.difference_new|floatformat:"2"|intcomma}} ({{compare.savings_new|floatformat:"0"|intcomma}}%)</p>
                         {% elif edition_type == 'Previous'%}
                             <img src='{% static "books/Logo.png" %}' height='30px'> <p>Save ${{compare.difference_new|floatformat:"2"|intcomma}} ({{compare.savings_new|floatformat:"0"|intcomma}}%)</p>
-                        {% endif %}</li>
-                    <li class="list-group-item">Used: ${{ price_used.price }}
+                        {% endif %}</a></li>
+                    <li class="list-group-item">Used: <a href="http://amazon.com/dp/{{book.asin}}?tag={{ affiliate }}">${{ price_used.price }}
                             {% if edition_type == 'Previous' and compare.previous_better_used%}
                             <img src='{% static "books/Logo.png" %}' height='30px'> <p>Save ${{compare.difference_used|floatformat:"2"|intcomma}} ({{compare.savings_used|floatformat:"0"|intcomma}}%)</p>
                         {% elif edition_type == 'Previous'%}
                             <img src='{% static "books/Logo.png" %}' height='3s0px'> <p>Save ${{compare.difference_used|floatformat:"2"|intcomma}} ({{compare.savings_used|floatformat:"0"|intcomma}}%)</p>
-                        {% endif %}  </li>
+                        {% endif %} </a> </li>
                 
             
                 </ul>
